@@ -1,6 +1,6 @@
 #### Preamble ####
 # Purpose: Tests analysis data
-# Author: Daniel, Vandan
+# Author: Daniel
 # Date: 4 November 2024
 # Contact: danie.xu@mail.utoronto.ca
 # License: MIT
@@ -8,58 +8,51 @@
 
 
 #### Workspace setup ####
-library(testthat)
 library(tidyverse)
 library(testthat)
 library(arrow)
+library(here)
 
-data <- read_parquet("data/02-analysis_data/analysis_data.csv")
+members <- read_parquet(here("data/02-analysis_data/members_analysis_data.parquet"))
+expedition <- read_parquet(here("data/02-analysis_data/expedition_analysis_data.parquet"))
+peaks <- read_parquet(here("data/02-analysis_data/peaks_analysis_data.parquet"))
 
-test_that("Critical columns do not contain NA", {
-  expect_true(all(!is.na(expedition$expedition_id)))
-  expect_true(all(!is.na(expedition$peak_id)))
-  expect_true(all(!is.na(peaks$peak_id)))
-  expect_true(all(!is.na(members$expedition_id)))
-})
+# Expedition tests
+# Test 1: No missing critical fields in expedition
+if (any(is.na(expedition$expedition_id))) stop("Missing values in expedition_id")
+if (any(is.na(expedition$peak_id))) stop("Missing values in peak_id")
+if (any(is.na(expedition$year))) stop("Missing values in year")
 
-test_that("Year is within a valid range", {
-  expect_true(all(expedition$year >= 1900 & expedition$year <= 2023))
-  expect_true(all(members$year >= 1900 & members$year <= 2023))
-})
+# Test 2: Expedition years are valid
+if (any(expedition$year < 1905 | expedition$year > 2019)) stop("Expedition year out of range (1905-2019)")
 
-test_that("Peak heights are within plausible ranges", {
-  expect_true(all(peaks$height_metres >= 6000 & peaks$height_metres <= 9000))
-})
+# Test 3: Members count is reasonable
+if (any(expedition$members <= 0)) stop("Members count should be greater than 0")
 
-test_that("Death cause and height are filled when died is TRUE", {
-  expect_true(all(is.na(members$death_cause[!members$died]) | members$died[!members$died] == FALSE))
-  expect_true(all(is.na(members$death_height_metres[!members$died]) | members$died[!members$died] == FALSE))
-})
+# Peaks tests
+# Test 1: Peak heights are valid
+if (any(peaks$peak_height < 5000 | peaks$peak_height > 9000)) stop("Peak height out of range (5000-9000)")
 
-test_that("Highpoint metres do not exceed peak height", {
-  for (i in 1:nrow(expedition)) {
-    peak_height <- peaks$height_metres[peaks$peak_id == expedition$peak_id[i]]
-    expect_true(expedition$highpoint_metres[i] <= peak_height)
-  }
-  
-  for (i in 1:nrow(members)) {
-    peak_height <- peaks$height_metres[peaks$peak_id == members$peak_id[i]]
-    expect_true(members$highpoint_metres[i] <= peak_height)
-  }
-})
+# Test 2: Peak IDs are unique
+if (length(unique(peaks$peak_id)) != nrow(peaks)) stop("Duplicate peak IDs found")
 
-test_that("Members have valid expedition IDs", {
-  expect_true(all(members$expedition_id %in% expedition$expedition_id))
-})
+# Test 3: First ascent year is valid
+if (any(peaks$first_ascent_year < 1800 | peaks$first_ascent_year > 2019)) stop("First ascent year out of range (1800-2019)")
 
-test_that("There are successful expeditions", {
-  expect_gt(sum(expedition$termination_reason == "Success"), 0)
-})
+# Members tests
+# Test 1: Member expedition links are valid
+if (!all(members$expedition_id %in% expedition$expedition_id)) stop("Invalid expedition_id in members")
 
-test_file("test_simulated_data.R")
-# Apply rules to data
-validation_results <- confront(data, rules)
+# Test 2: Member IDs are valid
+if (any(is.na(members$member_id))) stop("Missing member_id values")
 
-# Summary of validation
-summary(validation_results)
+# Test 3: Members' ages are reasonable
+if (any(members$age < 18 | members$age > 80)) stop("Members' ages out of reasonable bounds (18-80)")
+
+# Test 4: Highpoint does not exceed peak height
+peak_heights <- peaks$peak_height[match(members$peak_id, peaks$peak_id)]
+if (any(members$highpoint_metres > peak_heights)) stop("Highpoint exceeds peak height")
+
+# Test 5: If died is TRUE, death cause should not be NA
+if (any(members$died & is.na(members$death_cause))) stop("Death cause is missing for members who died")
 
