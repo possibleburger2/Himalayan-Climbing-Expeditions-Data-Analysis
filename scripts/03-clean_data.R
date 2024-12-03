@@ -5,7 +5,7 @@ library(janitor)
 library(lubridate)
 library(arrow)
 
-from # https://github.com/tacookson/data/blob/master/himalayan-expeditions/src/clean-himalayan-data.R
+ # from https://github.com/tacookson/data/blob/master/himalayan-expeditions/src/clean-himalayan-data.R
 
 # Peaks
 peaks <- read_csv("./data/01-raw_data/peaks.csv") %>%
@@ -155,7 +155,7 @@ members <-
     injury_type = ifelse(injured, injury_type, NA_character_),
     injury_height_metres = ifelse(injured, injury_height_metres, NA)
   )
-write_csv(analysis_data,"data/02-analysis_data/analysis_data.csv")
-write_parquet(expeditions,"data/02-analysis_data/expedition_analysis_data.parquet")
+
+write_parquet(expeditions,"data/02-analysis_data/expeditions_analysis_data.parquet")
 write_parquet(members,"data/02-analysis_data/members_analysis_data.parquet")
 write_parquet(peaks,"data/02-analysis_data/peaks_analysis_data.parquet")
