@@ -6,7 +6,7 @@ author:
 thanks: "Code and data are available at: [https://github.com/possibleburger2/](https://github.com/possibleburger2/Himalayan-Climbing-Expeditions-Data-Analysis)."
 date: today
 date-format: long
-abstract: "This study asseses factors that contribute to success in Himalayan Expeditions from Himalayan Expedition data from 1905-2019"
+abstract: "This study analyzes over a century of Himalayan mountaineering expeditions (1905–2019) to identify key factors influencing success. Using logistic regression, we find that preparation and timing—such as the use of supplemental oxygen and climbing during optimal seasons—are more important predictors of success than individual traits like age, gender, or the height of the peak. These findings reveal that success in high-altitude climbing depends more on strategic choices than personal attributes. This insight underscores the value of informed planning and environmental awareness for achieving mountaineering goals."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -359,7 +359,7 @@ ggplot(coefficients, aes(x = estimate, y = term)) +
 
 # Discussion {#sec-discussion}
 
-## Climbing success relys on oxygen used signifigantly
+## Climbing success relys on oxygen used significantly
 
 There is a large certain positive affect of oxygen used on a climb, this can be due to many reasons. While it is definitely true that oxygen will help with a large obstacle called altitude sickness it also represents a change in technology and climbing culture. As technology has gotten better it has been easier and cheaper to carry more oxygen, also due to an ever increasing use of sherpas or hired help to reach summits. These are all issues that also increase summit success rates so the data may be over representing the actual effectiveness of oxygen. What it also represents is the overall preparedness of the climber, and that will naturally influence the success rate.
 
