@@ -45,7 +45,7 @@ The raw data was downloaded from the following repository: https://github.com/ta
 │   ├── 01-test_simulated_data.R           - Script for testing the quality of simulated data.  
 │   ├── 03-clean_data.R                    - Script for cleaning raw data.  
 │   ├── 04-analyze_data.R                  - Script for analyzing processed data.  
-│   └── 06-merge_data.R                    - Script for merging datasets.  
+│   └── 06-model_data.R                    - Script for modeling data.  
 
 ├── .gitignore                             - Git configuration file to ignore unnecessary files.  
 ├── Himalayan-Climbing-Expedition.Rproj   - RStudio project file for this project.  
