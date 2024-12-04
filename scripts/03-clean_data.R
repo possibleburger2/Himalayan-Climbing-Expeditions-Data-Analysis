@@ -161,12 +161,3 @@ members <-
 write_parquet(expeditions,"data/02-analysis_data/expeditions_analysis_data.parquet")
 write_parquet(members,"data/02-analysis_data/members_analysis_data.parquet")
 write_parquet(peaks,"data/02-analysis_data/peaks_analysis_data.parquet")
-
-write_csv(expeditions,"data/02-analysis_data/expeditions_analysis_data.csv")
-write_csv(members,"data/02-analysis_data/members_analysis_data.csv")
-write_csv(peaks,"data/02-analysis_data/peaks_analysis_data.csv")
-members_exp <- members %>%
-  left_join(expeditions %>%
-              select(expedition_id, basecamp_date, termination_date, members, hired_staff),
-            by = "year")
-view(members_exp)

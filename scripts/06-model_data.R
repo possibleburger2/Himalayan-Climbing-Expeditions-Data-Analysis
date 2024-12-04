@@ -1,6 +1,6 @@
 #### Preamble ####
-# Purpose: Models winner of 2024 US election
-# Author: Daniel, Vandan
+# Purpose: Models climbing successes
+# Author: Daniel
 # Date: 4 November 2024
 # Contact: danie.xu@mail.utoronto.ca
 # License: MIT
@@ -18,10 +18,7 @@ library(stats)
 set.seed(42)  
 
 #### Read the data and create model ####
-# Read the cleaned analysis dataset
-#expeditions <- read_csv("data/02-analysis_data/expeditions_analysis_data.csv")
-#members <- read_csv("data/02-analysis_data/members_analysis_data.csv")
-#peaks <-read_csv("data/02-analysis_data/peaks_analysis_data.csv")
+
 expeditions <- read_parquet("data/02-analysis_data/expeditions_analysis_data.parquet")
 members <- read_parquet("data/02-analysis_data/members_analysis_data.parquet")
 peaks <- read_parquet("data/02-analysis_data/peaks_analysis_data.parquet")
@@ -48,9 +45,10 @@ model <- glm(
   formula = success ~ age + members + hired_staff + oxygen_used.x + season + height_metres + citizenship + sex,
   data = test_data,
   family = "binomial")
+
 summary(model)
 
-# model with hired_staff and citenzenship removed 
+# model with hired_staff and citizenship removed 
 model2 <- glm(formula = success ~ age + members + oxygen_used.x + season +height_metres + sex,
               data = test_data,
               family = "binomial")
@@ -67,4 +65,8 @@ saveRDS(
   file = "models/binary_logit.rds"
 )
 
+saveRDS(
+  model,
+  file= "models/original_model.rds"
+)
 
