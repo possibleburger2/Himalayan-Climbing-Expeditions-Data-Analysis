@@ -12,38 +12,58 @@ library(rstanarm)
 library(here)
 library(arrow)
 library(brms)
-  
+library(rsample)
+library(stats)
+
+set.seed(42)  
+
 #### Read the data and create model ####
 # Read the cleaned analysis dataset
 #expeditions <- read_csv("data/02-analysis_data/expeditions_analysis_data.csv")
 #members <- read_csv("data/02-analysis_data/members_analysis_data.csv")
 #peaks <-read_csv("data/02-analysis_data/peaks_analysis_data.csv")
+expeditions <- read_parquet("data/02-analysis_data/expeditions_analysis_data.parquet")
+members <- read_parquet("data/02-analysis_data/members_analysis_data.parquet")
+peaks <- read_parquet("data/02-analysis_data/peaks_analysis_data.parquet")
+
+#merge data
 
 members_exp <-  merge(members,expeditions,by = c("expedition_id","year","season","peak_id","peak_name"),all.x = TRUE)
-total <- merge(members_exp,)
-# Fit a Bayesian logistic regression model
-model <- brm(
-  formula = success ~ age + members + hired_staff + oxygen_used.x + season,
-  data = members_exp,
-  family = bernoulli(),   # Logistic regression
-  prior = c(
-    prior(normal(0, 5), class = "b"),   # Prior for coefficients
-    prior(normal(0, 5), class = "Intercept")   # Prior for intercept
-  ),
-  cores = 4,      # Number of CPU cores to use for parallel processing
-  control = list(adapt_delta = 0.99)   # Control for convergence issues (if needed)
-)
+total <- merge(members_exp,peaks, by = c("peak_id","peak_name"))
 
-# View model summary
+#split data for testing
+
+data_split <- initial_split(total, prop = 0.8)
+
+# Extract the training and testing data
+train_data <- training(data_split)
+test_data <- testing(data_split)
+
+# Optionally, you can check the split
+nrow(train_data)  # Training data size
+nrow(test_data)   # Testing data size
+
+# Fit a Bayesian logistic regression model
+model <- glm(
+  formula = success ~ age + members + hired_staff + oxygen_used.x + season + height_metres + citizenship + sex,
+  data = test_data,
+  family = "binomial")
 summary(model)
 
-# Check diagnostics (Rhat, effective sample size, etc.)
-launch_shinystan(model)
+# model with hired_staff and citenzenship removed 
+model2 <- glm(formula = success ~ age + members + oxygen_used.x + season +height_metres + sex,
+              data = test_data,
+              family = "binomial")
+
+anova(model2,model,
+      test = "LRT")
+
+round(exp(cbind(OR = coef(model2), confint(model2))), 3) # OR and 95% CI
 
 
 #### Save model ####
 saveRDS(
-  model,
+  model2,
   file = "models/single_bay.rds"
 )
 
