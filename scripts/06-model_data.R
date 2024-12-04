@@ -64,7 +64,7 @@ round(exp(cbind(OR = coef(model2), confint(model2))), 3) # OR and 95% CI
 #### Save model ####
 saveRDS(
   model2,
-  file = "models/single_bay.rds"
+  file = "models/binary_logit.rds"
 )
 
 
