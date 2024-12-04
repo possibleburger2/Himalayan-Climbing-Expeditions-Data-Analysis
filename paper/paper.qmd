@@ -108,7 +108,9 @@ peaks |>
 
 @fig-ssdistribution shows most peaks sit around 6000 meters above sea level, with a right skewed distribution and a maximum of almost 9000 meters and a minimum of 5250 meters.
 
-The Himalayan mountain range spans X KM (source), which means that the graphed distribution does not represent the distribution of ALL peaks in the Himalayas. Instead this distribution represents the distribution of peaks commonly attempted/climbed.The Himalayas starting at X M starting above sea level combined with the lowest height required to be considered a peak, the distribution starts at 5000m above sea level.
+The Himalayan mountain range spans a large amount of distance, which means that the graphed distribution does not represent the distribution of ALL peaks in the Himalayas. Instead this distribution represents the distribution of peaks commonly attempted/climbed.The Himalayas starting at X M starting above 2000m sea level combined with the lowest height required to be considered a peak, the distribution starts at 5000m above sea level.
+
+\newpage
 
 ```{r}
 #| warning: false
@@ -127,16 +129,15 @@ peaks |>
   theme(legend.position = "none")
 ```
 This graph shows that despite over 100 years of climbing history, not all attempted peaks have been conquered.
-
-\newpage
 Why do so many climbs fail however? The following graph shows the most common reasons.
+\newpage
 
 ```{r,fig.width = 12, fig.height = 9}
 #| warning: false
 #| message: false
 #| echo: false
 #| label: tbl-termination
-#| tbl-cap: "Top 5 most frequent pollsters, with count of polls, average pollscore (lower scores indicate less bias), and average numeric grade (higher values indicate greater reliability)."
+#| tbl-cap: "Common reasons why attempts fail"
 
 filtered_expeditions <- expeditions %>%
   filter(!termination_reason %in% c("Success (main peak)", "Success (subpeak)", "Success (claimed)"))
@@ -153,7 +154,6 @@ ggplot(filtered_expeditions, aes(x = termination_reason)) +
 
 @tbl-termination shows that most attempts fail due to partially random events like weather, or random events such Avalanches. 
 \newpage
-
 ```{r, fig.width = 12, fig.height = 3}
 #| warning: false
 #| message: false
@@ -176,10 +176,10 @@ peaks |>
 ```
 
 @fig-summit shows that while there was an intial surge then drop off of first ascents, there was again a steady increase in first ascents actually peaking in 2019, and the 2020 data was inconclusive since not all of the year was recorded in the data. This shows that first ascents are currently trending upwards
+
 \newpage
 
-
-```{r,fig.width = 12, fig.height = 6}
+```{r,fig.width = 12, fig.height = 5}
 #| warning: false
 #| message: false
 #| echo: false
@@ -217,10 +217,9 @@ top_20_countries |>
   ) 
 ```
 
-@fig-trend Expectly most first ascents are from the country that the Himalayas reside in, followed by Japan, UK, France, Germany, then the USA..
+@fig-trend Expectedly most first ascents are from the country that the Himalayas reside in, followed by Japan, UK, France, Germany, then the USA..
+
 \newpage
-
-
 
 ```{r}
 #| echo: false
@@ -273,12 +272,16 @@ countries_by_decade |>
 ```
 Notably there was only one data point past 1930, where X expedition had an ascent for X mountain in 1905 that was left out to save space from the UK so there should be a single bar only for the UK at 100% at 1905.
 
-
+\newpage
 
 
 
 ## Measurement
+The measurement of Himalayan climbing data in the referenced dataset involves converting real-world phenomena—such as expeditions, summits, and fatalities—into structured entries. This process begins with records collected from expedition reports, which are typically submitted by climbers or organizations. These reports include details about expedition dates, routes, climbers' nationalities, success in reaching the summit, and any fatalities or injuries that occurred.
 
+The dataset relies heavily on sources like The Himalayan Database, a comprehensive archive maintained by Elizabeth Hawley and her successors. This database aggregates information from direct interviews with climbers, expedition documentation, and third-party reports. However, the translation of these real-world events into dataset entries introduces several challenges. Discrepancies may arise due to incomplete or inconsistent reporting, varying definitions of a “summit,” and the underrepresentation of smaller, independent expeditions.
+
+For example, an expedition is recorded in the dataset only if sufficient documentation is available to verify its occurrence and outcomes. Factors such as weather conditions, local incidents, or logistical difficulties that don't result in a summit or a fatality may not be consistently recorded. Additionally, subjective elements, like the climbers’ or organizers' interpretation of success, influence the data's structure. These steps, while thorough, highlight potential biases in how phenomena are represented as measurable data.
 
 ## Model {#sec-model}
 I used a Binary Logistic Regression uses the age of an individual,the amount of members in their expedition, the amount of oxygen they used, the season of their climb, their sex and the height of mountain to determine the likelihood of an individual of summit-ting the peak or "succeeding". A Binary Logistic Regression is a statistical method to predict binary outcomes like the success or failure of a climb based on both categorical and continuous variables.
@@ -289,7 +292,6 @@ $$
 $$
 
 ## Model Justification
-
 ```{r}
 #| echo: false
 #| warning: false
@@ -301,12 +303,13 @@ $$
 model1 <- readRDS(here("models/binary_logit.rds"))
 model2 <- readRDS(here("models/original_model.rds"))
 
-modelsummary(model2,statistic = c("p.value"))
+#modelsummary(model2,statistic = c("p.value")) simply took output and inputted as png, the length of the table is too long and won't wrap
 ```
 \newpage
-\newpage
 
-shows the influence (top number) and P-Value (bottom number in brackets) of each variable. For example each year increase in age reduces the probability they will succeed by around two percent with a P-value of 0.001 which means we are very sure of this relationship. A P-value of 0.001 means only 0.1% of the time this relationship can be explained by random chance. Because the standard level of uncertainty is less than 5% we should try to remove variables over a 0.05 P-value. There are also several figures relating to model accurary at the bottom of the figure;the main one to focus on is RMSE. An RMSE of 0.41 means the model predicts results within 41% of the actual results. For a model with a binary outcome it means our model predicts successes 59% of the time.]
+![](image1.png)
+This table shows the influence (top number) and P-Value (bottom number in brackets) of each variable. For example each year increase in age reduces the probability they will succeed by around two percent with a P-value of 0.001 which means we are very sure of this relationship.
+A P-value of 0.001 means only 0.1% of the time this relationship can be explained by random chance. Because the standard level of uncertainty is less than 5% we should try to remove variables over a 0.05 P-value. There are also several figures relating to model accurary at the bottom of the figure;the main one to focus on is RMSE. An RMSE of 0.41 means the model predicts results within 41% of the actual results. For a model with a binary outcome it means our model predicts successes 59% of the time.(removed entries for each country due to formatting issues)
 
 Because we have so many statistically insignificant variables at a 5% uncertainty we should try to remove them to see the impact it has on the model
 ```{r}
@@ -318,9 +321,7 @@ Because we have so many statistically insignificant variables at a 5% uncertaint
 modelsummary(model1, statistic = c("p.value"))
 ```
 \newpage
-\newpage
-
-shows us that despite removing citizenship and hired_staff the RMSE only grains 0.01, meaing it loses 1% accuracy. This means the citizenship of climber nor the amount of hired staff did not contribute to the model's accuracy and were good to remove.
+The second table shows the results when citizenship and hired_staff are removed. We see the RMSE only grains 0.01, meaning it loses 1% accuracy. This means the citizenship of climber nor the amount of hired staff did not contribute to the model's accuracy and were good to remove.
 ```{r, fig.width = 2, fig.height = 1}
 #| echo: false
 #| warning: false
@@ -396,7 +397,7 @@ Looking ahead, future research should focus on improving the dataset by explorin
 
 # Appendix {#sec-appendix}
 ## Cleaning
-For the analysis data, the cleaning steps I took were:
+For the analysis data, the cleaning steps were from @Cookson
 
 The data cleaning process described in the provided script involves transforming raw data into a more consistent, accurate, and analysis-ready format. The first step in the cleaning process is applied to the peaks dataset, which contains information about various mountain peaks. In this step, columns are renamed for clarity, such as changing PEAKID to peakid and PKNAME to peakname. Only the necessary columns are retained, while others are discarded to simplify the dataset. A key aspect of this cleaning is handling the climbingstatus column. The raw data uses numerical values (0, 1, 2) to represent the climbing status, so these numbers are recoded into meaningful labels like "Unknown," "Unclimbed," and "Climbed." Additionally, a data entry error is corrected for Sharpu II (identified by peakid == "SPH2"), where the year of the first ascent is changed to 2018 to fix an obvious mistake.
 
@@ -404,7 +405,23 @@ The second dataset cleaned is the expeditions dataset, which tracks various clim
 
 The third dataset, members, contains information about individual climbers. This dataset is also joined with the peaks dataset to associate each climber's expedition with the corresponding peak name. As with the other datasets, only the relevant columns are retained and renamed. Any value of 0 in the age column is treated as missing data and changed to NA. The deathcause and injurytype columns, which are initially represented by numeric values (0-12), are recoded into readable categories like "AMS" (Acute Mountain Sickness) and "Exhaustion." The cleaning also involves handling information related to deaths and injuries. For climbers who have died, the deathcause and deathheightmetres are updated, and similarly, the injurytype and injuryheightmetres are updated for injured climbers.
 
+## Observational data
+Himalayan climbing data, particularly concerning summits and fatalities on peaks like Mount Everest, may misrepresent actual outcomes due to several factors, including incomplete reporting, commercial biases, and evolving definitions of success. These discrepancies can create a skewed understanding of the risks and achievements in high-altitude mountaineering.
+Incomplete Reporting
 
+Many summits, fatalities, and near-misses in the Himalayas go unreported or inaccurately documented due to the remote and challenging environments of the region. Smaller expeditions, particularly those from less prominent countries or by independent climbers, may not submit detailed records. Additionally, incidents on less-frequented peaks are less likely to be covered in international or even regional climbing databases, leading to underrepresentation in global statistics. For example, organizations like the Himalayan Database, while comprehensive, rely heavily on self-reported data, which can vary in reliability depending on the source.
+Commercial Influences
+
+The rise of commercial expedition companies has significantly influenced how climbing data is presented. For marketing purposes, these companies may highlight success rates while downplaying or omitting fatalities or unsuccessful attempts. Moreover, certain deaths that occur before or after the official climbing season might not be included in annual tallies, further skewing statistics. High-profile peaks like Everest often see overrepresentation in the data, as their fame and accessibility make them more frequently reported than other Himalayan mountains.
+
+
+The definition of a “summit” itself can vary, adding further complications. On Everest, for example, some climbers might claim summits upon reaching the South Summit or other points close to the highest peak, particularly in cases of bad weather or emergencies. Such claims are sometimes accepted without verification, leading to inflated success statistics. Disputes over what constitutes a legitimate ascent, particularly as aided by modern technology like oxygen tanks and fixed ropes, also muddy the waters of accurate representation.
+Bias in Reporting Fatalities
+
+Fatality rates may also be misrepresented due to a focus on high-profile accidents involving Western climbers or commercial expeditions, while incidents involving Sherpas and local climbers are often underreported. Sherpas, who take on the riskiest roles during climbs, such as route preparation and heavy load carrying, face disproportionate risks that may not be fully reflected in the data.
+Conclusion
+
+The misrepresentation of Himalayan climbing data has implications for understanding the true risks and challenges of high-altitude mountaineering. Efforts to improve the accuracy of this data, such as independent verification and more comprehensive reporting systems, are essential for providing climbers, researchers, and policymakers with reliable information. Sources like The Himalayan Database [@Salisbury], the American Alpine Journal, and recent academic studies on mountaineering ethics and statistics provide valuable insights but also highlight the need for more transparent and standardized data collection practices.
 
 # References
 
