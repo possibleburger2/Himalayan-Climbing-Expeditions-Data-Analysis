@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Simulates polling data
+# Purpose: Simulates climbing data
 # Author: Daniel Xu
 # Date: 4 November 2024
 # Contact: danie.xu@mail.utoronto..ca
