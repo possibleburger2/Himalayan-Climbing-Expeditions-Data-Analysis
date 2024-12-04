@@ -29,6 +29,10 @@ if (any(expedition$year < 1905 | expedition$year > 2019)) stop("Expedition year 
 # Test 3: Members count is reasonable
 if (any(expedition$members < 0)) stop("Members count should be greater than 0")
 
+# Test 4: All expedition ids are unique
+
+if (n_distinct(expeditions$expedition_id) != nrow(expeditions)) stop("Repeat Expedition Ids")
+
 # Peaks tests
 # Test 1: Peak heights are valid
 if (any(peaks$height_metres < 5000 | peaks$height_metres > 9000)) stop("Peak height out of range (5000-9000)")

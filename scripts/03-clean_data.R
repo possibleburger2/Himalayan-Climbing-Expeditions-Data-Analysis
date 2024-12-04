@@ -5,7 +5,7 @@ library(janitor)
 library(lubridate)
 library(arrow)
 
- # from https://github.com/tacookson/data/blob/master/himalayan-expeditions/src/clean-himalayan-data.R
+#from https://github.com/tacookson/data/blob/master/himalayan-expeditions/src/clean-himalayan-data.R
 
 # Peaks
 peaks <- read_csv("./data/01-raw_data/peaks.csv") %>%
@@ -81,7 +81,8 @@ expeditions <- read_csv("./data/01-raw_data//exped.csv") %>%
       season == 4 ~ "Winter"
     )
   )
-
+#Expeditions <- expeditions %>%
+#  mutate(expedition_id = ifelse(expedition_id == "KANG10101",""))
 members <-
   read_csv("./data/01-raw_data/members.csv", guess_max = 100000) %>%
   left_join(peak_names, by = c("PEAKID" = "peak_id")) %>%
@@ -154,8 +155,18 @@ members <-
     death_height_metres = ifelse(died, death_height_metres, NA),
     injury_type = ifelse(injured, injury_type, NA_character_),
     injury_height_metres = ifelse(injured, injury_height_metres, NA)
-  )
+)
+
 
 write_parquet(expeditions,"data/02-analysis_data/expeditions_analysis_data.parquet")
 write_parquet(members,"data/02-analysis_data/members_analysis_data.parquet")
 write_parquet(peaks,"data/02-analysis_data/peaks_analysis_data.parquet")
+
+write_csv(expeditions,"data/02-analysis_data/expeditions_analysis_data.csv")
+write_csv(members,"data/02-analysis_data/members_analysis_data.csv")
+write_csv(peaks,"data/02-analysis_data/peaks_analysis_data.csv")
+members_exp <- members %>%
+  left_join(expeditions %>%
+              select(expedition_id, basecamp_date, termination_date, members, hired_staff),
+            by = "year")
+view(members_exp)
