@@ -16,7 +16,7 @@ editor:
 ---
 
 ```{r}
-#| include: false
+#| include: falsex
 #| warning: false
 #| message: false
 library(tidyverse)
@@ -142,12 +142,44 @@ expeditions |>
 #| echo: false
 #| label: fig-members
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
-  
-expeditions$success <- expeditions$termination_reason %in% c("Success (main peak)", "Success (subpeak)")
+
 success_rate <- expeditions |>
   group_by(members)|>
   summarize(success_rate = mean(success))
 ggplot(success_rate, aes(x = members, y = success_rate)) +
+  geom_line(color = "blue") + # Line plot
+  geom_point(color = "red") + # Points to emphasize values
+  labs(
+    title = "Success Rate by Members",
+    x = "Number of Members",
+    y = "Success Rate"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-hired
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+
+ggplot(expeditions, aes(hired_staff))+
+  geom_histogram(
+    binwidth = 1
+  )
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-hired
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+success_rate <- expeditions |>
+  group_by(hired_staff)|>
+  summarize(success_rate = mean(success))
+ggplot(success_rate, aes(x = hired_staff, y = success_rate)) +
   geom_line(color = "blue") + # Line plot
   geom_point(color = "red") + # Points to emphasize values
   labs(
@@ -167,6 +199,33 @@ ggplot(success_rate, aes(x = members, y = success_rate)) +
 
 ggplot(expeditions,aes(season)) +
   geom_bar()
+```
+
+average age
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-ssdistribution
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+
+ggplot(expeditions, aes(average_age)) +
+  geom_histogram()
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-ssdistribution
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+success_by_age <- expeditions |>
+  group_by(age_range) |>
+  summarize(success_rate = mean(success, na.rm = TRUE))
+ggplot(success_by_age,aes( x = age_range, y = success_rate))+
+  geom_bar(stat = 'identity')
+  
 ```
 
 ```{r, fig.width = 12, fig.height = 6}
