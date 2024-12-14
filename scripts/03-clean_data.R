@@ -53,7 +53,7 @@ expeditions <- read_csv("./data/01-raw_data//exped.csv") %>%
     hired_staff = TOTHIRED,
     hired_staff_deaths = HDEATHS,
     oxygen_used = O2USED,
-    trekking_agency = AGENCY
+    trekking_agency = is.na(AGENCY)
   ) %>%
   mutate(
     termination_reason = case_when(
@@ -157,6 +157,22 @@ members <-
     injury_height_metres = ifelse(injured, injury_height_metres, NA)
 )
 
+members <- members %>%
+  group_by(expedition_id) %>%
+  summarise(average_age = mean(age, na.rm = TRUE)) %>%
+  ungroup()
+
+# Add average age to expeditions dataset
+expeditions <- expeditions %>%
+  left_join(members, by = "expedition_id")
+
+# If you want to see the first few rows of the result
+head(expeditions)
+
+
+
+# To verify the results:
+summary(expeditions_with_age$average_age)
 
 write_parquet(expeditions,"data/02-analysis_data/expeditions_analysis_data.parquet")
 write_parquet(members,"data/02-analysis_data/members_analysis_data.parquet")
