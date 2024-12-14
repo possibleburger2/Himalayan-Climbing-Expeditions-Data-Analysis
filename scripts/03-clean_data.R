@@ -157,22 +157,40 @@ members <-
     injury_height_metres = ifelse(injured, injury_height_metres, NA)
 )
 
-members <- members %>%
-  group_by(expedition_id) %>%
-  summarise(average_age = mean(age, na.rm = TRUE)) %>%
-  ungroup()
+print(expeditions)
+expeditions <- expeditions |>
+  # Join with average age data from members
+  left_join(
+    members |>
+      group_by(expedition_id) |>
+      summarise(average_age = mean(age, na.rm = TRUE)) |>
+      ungroup(),
+    by = "expedition_id"
+  ) |>
+  # Create success column
+  mutate(success = termination_reason %in% 
+           c("Success (main peak)", "Success (subpeak)", "Success (claimed)")) |>
+  # Create age ranges and calculate success rate
+  mutate(
+    age_range = cut(
+      average_age,
+      breaks = seq(
+        from = floor(min(average_age, na.rm = TRUE)),
+        to = ceiling(max(average_age, na.rm = TRUE)),
+        by = 5
+      ),
+      labels = paste(
+        seq(floor(min(average_age, na.rm = TRUE)),
+            ceiling(max(average_age, na.rm = TRUE))-5,
+            by = 5),
+        seq(floor(min(average_age, na.rm = TRUE))+4,
+            ceiling(max(average_age, na.rm = TRUE))-1,
+            by = 5),
+        sep = "-"
+      )
+    )
+  ) 
 
-# Add average age to expeditions dataset
-expeditions <- expeditions %>%
-  left_join(members, by = "expedition_id")
-
-# If you want to see the first few rows of the result
-head(expeditions)
-
-
-
-# To verify the results:
-summary(expeditions_with_age$average_age)
 
 write_parquet(expeditions,"data/02-analysis_data/expeditions_analysis_data.parquet")
 write_parquet(members,"data/02-analysis_data/members_analysis_data.parquet")

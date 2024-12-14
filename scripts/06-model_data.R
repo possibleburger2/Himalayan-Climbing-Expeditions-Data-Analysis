@@ -25,9 +25,7 @@ peaks <- read_parquet("data/02-analysis_data/peaks_analysis_data.parquet")
 
 #merge data
 
-members_exp <-  merge(members,expeditions,by = c("expedition_id","year","season",
-                                            "peak_id","peak_name"),all.x = TRUE)
-total <- merge(members_exp,peaks, by = c("peak_id","peak_name"))
+
 
 #split data for testing
 
@@ -43,9 +41,9 @@ nrow(test_data)   # Testing data size
 
 # Fit a Bayesian logistic regression model
 model <- glm(
-  formula = success ~ age + members + hired_staff + oxygen_used.x + season 
-  + height_metres + citizenship + sex,
-  data = test_data,
+  formula = success ~ age_range + members + hired_staff + oxygen_used + season +
+  + height_metres  + sex_ratio,
+  data = expeditions,
   family = "binomial")
 
 summary(model)
