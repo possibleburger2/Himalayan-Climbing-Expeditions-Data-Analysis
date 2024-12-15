@@ -342,7 +342,7 @@ ggplot(expeditions, aes(season)) +
 #| message: false
 #| echo: false
 #| label: fig-year
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+#| fig-cap: "Distribution of years of expeditions"
 
 
 ggplot(expeditions, aes(year)) +
@@ -352,7 +352,12 @@ ggplot(expeditions, aes(year)) +
     x = "Year",
     y = "Count"
   ) +
-  theme_minimal()
+  theme_minimal() +
+   labs(
+    title = "Relationship between Hired staff and Success",
+    x = "Hired Staff",
+    y = "Outcome"
+  )
 
 ```
 
@@ -365,7 +370,7 @@ ggplot(expeditions, aes(year)) +
 #| message: false
 #| echo: false
 #| label: fig-ssdistribution
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+#| fig-cap: "Distribution of average age in expedition"
 ggplot(expeditions, aes(average_age)) +
   geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
   labs(
@@ -373,23 +378,12 @@ ggplot(expeditions, aes(average_age)) +
     x = "Average Age",
     y = "Count"
   ) +
-  theme_minimal()
-
-```
-
-\newpage
-
-```{r}
-#| warning: false
-#| message: false
-#| echo: false
-#| label: fig-age
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
-success_by_age <- expeditions |>
-  group_by(age_range) |>
-  summarize(success_rate = mean(success, na.rm = TRUE))
-ggplot(success_by_age,aes( x = age_range, y = success_rate))+
-  geom_bar(stat = 'identity')
+  theme_minimal() +
+   labs(
+    title = "Distribution of average age",
+    x = "Hired Staff",
+    y = "Outcome"
+  )
 
 ```
 
@@ -400,7 +394,7 @@ ggplot(success_by_age,aes( x = age_range, y = success_rate))+
 #| message: false
 #| echo: false
 #| label: fig-age-success
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+#| fig-cap: "Distribution of age and success has a nonlinear relationship, peaking at 35-40"
 
 ggplot(expeditions,aes(average_age,as.numeric(success))) +
  # Add jittered points with slight transparency 
@@ -421,7 +415,7 @@ ggplot(expeditions,aes(average_age,as.numeric(success))) +
   # Customize theme and labels
   theme_minimal() +
   labs(
-    title = "Relationship between Height and Success",
+    title = "Relationship between age and Success",
     x = "Height",
     y = "Outcome"
   ) +
@@ -446,16 +440,11 @@ ggplot(expeditions,aes(average_age,as.numeric(success))) +
 ggplot(expeditions, aes(sex_ratio)) +
   geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
   labs(
-    title = "Histogram of Average Age in Expeditions",
-    x = "Average Age",
+    title = "Distribution of male proportion in Expeditions",
+    x = "Male proportion in expedition",
     y = "Count"
   ) +
   theme_minimal() +
-  labs(
-    title = "Distribution of male proportion in expeditions",
-    x = "Height",
-    y = "Outcome"
-  ) +
   theme(
     plot.title = element_text(size = 14, face = "bold"),
     axis.title = element_text(size = 12),
@@ -535,30 +524,7 @@ ggplot(expeditions, aes(height_attempted)) +
 #| label: fig-height-success
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
 
-success_rate <- expeditions |>
-  group_by(height_attempted)|>
-  summarize(success_rate = mean(success))
-ggplot(success_rate, aes(height_attempted,success_rate)) +
-  geom_point(alpha = 0.6, color = "#2c3e50") +
-  # Add trend line with confidence interval
-  geom_smooth(method = "loess", color = "#e74c3c") +
-  scale_y_continuous(limits = c(0, 1)) +
-  scale_x_continuous(limits = c(5500, 9000)) +
-  # Customize theme and labels
-  theme_minimal() +
-  labs(
-    title = "Relationship between Height of mountain and Success Rate",
-    x = "Sex Ratio",
-    y = "Success Rate",
-    caption = "Data source: Your dataset"
-  ) +
-  # Enhance readability
-  theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10)
-  )
-####
+
 
 ggplot(expeditions, aes(x = height_attempted, y = as.numeric(success))) +
   # Add jittered points with slight transparency
@@ -603,9 +569,9 @@ ggplot(expeditions, aes(x = height_attempted, y = as.numeric(success))) +
 ggplot(expeditions, aes(previous_attempts)) +
   geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
   labs(
-    title = "Height of mountains attempted",
-    x = "Height in meters",
-    y = "Expeditions"
+    title = "Distribution of attempts on peaks",
+    x = "Attempts",
+    y = "Amount"
   ) +
   theme_minimal() +
   theme(
@@ -621,7 +587,7 @@ ggplot(expeditions, aes(previous_attempts)) +
 #| warning: false
 #| message: false
 #| echo: false
-#| fig-cap: "Amount of unclimbed Himalayan peaks"
+#| fig-cap: "Relationship of climb attempts on peak and success shows experience on a peak increases success rates."
 
 ggplot(expeditions, aes(previous_attempts, as.numeric(success))) +
            # Add jittered points with slight transparency
@@ -642,8 +608,8 @@ ggplot(expeditions, aes(previous_attempts, as.numeric(success))) +
   # Customize theme and labels
   theme_minimal() +
   labs(
-    title = "Relationship between Height and Success",
-    x = "Height",
+    title = "Relationship between previous attempts on the mountain and Success",
+    x = "Attempts",
     y = "Outcome"
   ) +
   theme(
@@ -652,10 +618,6 @@ ggplot(expeditions, aes(previous_attempts, as.numeric(success))) +
     axis.text = element_text(size = 10)
   )
 ```
-
-This graph shows that despite over 100 years of climbing history, not all attempted peaks have been conquered.
-Why do so many climbs fail however?
-The following graph shows the most common reasons.
 
 ## Measurement
 
@@ -677,7 +639,11 @@ These steps, while thorough, highlight potential biases in how phenomena are rep
 
 I used a Binary Logistic Regression uses the average age of an expedition,the amount of members in the expedition, the amount of hired staff in the expedition, whether or not they used oxygen, the season of the climb, the sex ratio, previous attemps on the same peak, and the height of mountain to determine the likelihood of an individual of summit-ting the peak or "succeeding".
 A Binary Logistic Regression is a statistical method to predict binary outcomes like the success or failure of a climb based on both categorical and continuous variables.
-The Model uses nine independent demographic variables and the dependent variable is "success" The logistic regression model I will be using is: $$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} + \beta_4 \times \text{season} +  \beta_5 \times \text{heightattempted} + \beta_6 \times \text{year} + \beta_7 \times \text{previousattempts}  + \beta_8 \times \text{sexratio} + \beta_9 \times \text{hiredstaff}$$
+The Model uses nine independent demographic variables and the dependent variable is "success" The intial logistic regression model I will be using is: $$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} + \beta_4 \times \text{season} +  \beta_5 \times \text{heightattempted} + \beta_6 \times \text{year} + \beta_7 \times \text{previousattempts}  + \beta_8 \times \text{sexratio} + \beta_9 \times \text{hiredstaff}$$
+
+After removing variables through the process below we will end up with:
+
+$$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} + \beta_4 \times \text{season} +  \beta_5 \times \text{heightattempted} + \beta_6 \times \text{previousattempts}$$
 
 ## Model Justification
 
@@ -695,9 +661,7 @@ model2 <- readRDS(here("models/model2.rds"))
 modelsummary(model1,statistic = c("p.value")) 
 ```
 
-\newpage
-
-This table shows the influence (top number) and P-Value (bottom number in brackets) of each variable.
+@tbl-summary1 shows the influence (top number) and P-Value (bottom number in brackets) of each variable.
 For example each year increase in age reduces the probability they will succeed by around two percent with a P-value of 0.001 which means we are very sure of this relationship.
 A P-value of 0.001 means only 0.1% of the time this relationship can be explained by random chance.
 Because the standard level of uncertainty is less than 5% we should try to remove variables over a 0.05 P-value.
@@ -705,6 +669,8 @@ There are also several figures relating to model accuracy at the bottom of the f
 While these value do not mean much in isolation when comparing two models we should look to use the one with the lower AIC and the lower RMSE.
 
 Because we have so many statistically insignificant variables at a 5% uncertainty we should try to remove them to see the impact it has on the model
+
+\newpage
 
 ```{r}
 #| echo: false
@@ -737,7 +703,9 @@ kable(results, caption = "ANOVA Model Comparison") |>
 The full model in @tbl-summary (with 6 more parameters) does not significantly improve model fit compared to the reduced model.
 The p-value of 0.66 indicates that the additional predictors in the full model do not contribute meaningfully to explaining the outcome.
 Therefore, the simpler (reduced) model is likely preferable because it achieves similar performance with fewer parameters.
-\newpage \## Results {#sec-results}
+\newpage
+
+# Results {#sec-results}
 
 ```{r}
 #| echo: false
