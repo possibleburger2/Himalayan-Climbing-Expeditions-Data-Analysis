@@ -33,9 +33,7 @@ The raw data was downloaded from the following repository: https://github.com/ta
 │       ├── Members_data_Sketch.png       - Sketch or diagram visualizing members' data structure.  
 │       └── Peaks_data_Sketch.png         - Sketch or diagram visualizing peaks data structure.  
 
-├── paper  
-│   ├── image1.png                         - Supporting image for the paper.  
-│   ├── image2.png                         - Supporting image for the paper.  
+├── paper    
 │   ├── paper.pdf                          - Final draft of the paper.  
 │   ├── paper.qmd                          - Quarto markdown file for the paper.  
 │   └── references.bib                     - Bibliography or reference file.  
