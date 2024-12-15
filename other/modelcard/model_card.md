@@ -27,11 +27,11 @@ This Bayesian logistic regression model predicts the probability of success in H
 - **Peaks Data:** Provides information about mountain characteristics (e.g., height in meters).
 
 ### Data Preprocessing:
-1. Merged expeditions, members, and peaks datasets using shared keys (e.g., `expedition_id`, `peak_id`).
+1. Created average age and previous attempts from members data and combined those columns with expeditions.
 2. Split the data into training (80%) and testing (20%) subsets using `rsample::initial_split()`.
 
 ### Input Variables:
-- **Predictors:** Age, members, oxygen use, season, peak height, sex.
+- **Predictors:** Average age, members, oxygen use, season, height of peak attempted, previous attempts.
 - **Outcome Variable:** Binary indicator of success (1 = summit reached, 0 = no summit).
 
 ---
@@ -44,10 +44,11 @@ This Bayesian logistic regression model predicts the probability of success in H
 - 80% of the combined dataset (~training set size determined during preprocessing).
 
 ### Key Features:
-- **Formula:** `success ~ age + members + oxygen_used.x + season + height_metres + sex`
+- **Formula:** `success ~ success ~ average_age + members  + oxygen_used
+               + height_attempted + previous_attempts`
 - Two models were evaluated:
-  - **Model 1:** Included hired_staff and citizenship.
-  - **Model 2 (Final):** Excluded hired_staff and citizenship for improved simplicity and interpretability.
+  - **Model 1:** Included hired_staff, season, year.
+  - **Model 2 (Final):** Excluded hired_staff, season, year for simplicity and interpretability.
 
 ### Performance:
 - **Odds Ratios (OR) and 95% Confidence Intervals (CI):** Calculated for model coefficients.
@@ -57,9 +58,7 @@ This Bayesian logistic regression model predicts the probability of success in H
 
 ## Ethical Considerations
 ### Bias:
-- Underrepresentation of climbers from countries with fewer expeditions may introduce bias.
-- Variables like citizenship were excluded in the final model to mitigate potential ethical concerns.
-
+- Age represented as purely detrimental to success despite non linear relationship in data
 ### Limitations:
 - Does not account for real-time weather, route conditions, or climbers’ fitness on the day of the climb.
 - May generalize poorly to newer peaks with limited historical data.
