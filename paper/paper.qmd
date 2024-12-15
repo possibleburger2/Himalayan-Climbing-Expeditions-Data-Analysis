@@ -50,7 +50,7 @@ Mountaineering is a dangerous hobby however, with unpredictable weather and temp
 This paper will find what factors have affected the climbers of the past to either conquer or be conquered.
 
 This paper uses data sourced from @Cookson, based on The Himalayan Database [@Salisbury] about expeditions from 1905-2019 to analyze which factors help or deter climbers from succeeding.
-We use a binomial logistic regression model to determine the probability of success based on a variety of demographic, enviromental, and organizational factors.
+We use a binomial logistic regression model to determine the probability of success based on a variety of demographic, environmental, and organizational factors.
 
 The estimand is the relationship between said factors and the success of a mountaineering expedition.
 By analyzing the data set, we can identify which factors contribute to a success or failure and by how much.
@@ -94,7 +94,7 @@ Peaks also contains more information about each specific mountain peak like `hei
 
 Members contains `member_id` which is a unique id for each individual in each expedition.
 Importantly it doesn't capture the same individual in different expeditions instead assigning two `member_ids`.
-It connects to Expeditions with `expeditions_id` and contains alot of information about the specific member during the expedition.
+It connects to Expeditions with `expeditions_id` and contains a lot of information about the specific member during the expedition.
 Most importantly for this data we use average sex and age of all the members in each expeditions for the model.
 
 Expeditions contains most of the important data for our model since the model determines the success rate of an expedition as opposed to an individual.
@@ -114,7 +114,7 @@ Finally, the data set includes `height_attempted`, a numeric column for the alti
 #| label: fig-Success
 #| fig-width: 10
 #| fig-height: 5
-#| fig-cap: "A slight majority of Expeditions succeed, with the most common reasons expeditions fail being enviromental issues"
+#| fig-cap: "A slight majority of Expeditions succeed, with the most common reasons expeditions fail being environmental issues"
 
 termination_counts <- expeditions |>
   dplyr::count(termination_reason, sort = TRUE)
@@ -155,7 +155,7 @@ Members is the amount of non-paid people in the expedition.
 #| message: false
 #| echo: false
 #| label: fig-members
-#| fig-cap: "Most expeditions have less than 3 members showing an exponetial decrease with an increase in members. The red lines indicate member amounts that have only had one expedition"
+#| fig-cap: "Most expeditions have less than 3 members showing an exponential decrease with an increase in members. The red lines indicate member amounts that have only had one expedition"
 
 
 expeditions |>
@@ -458,7 +458,7 @@ ggplot(expeditions, aes(sex_ratio)) +
 #| message: false
 #| echo: false
 #| label: fig-sex-success
-#| fig-cap: "Relationship of male proportion of expedition and succes is a small positive relationship possibly explained by other factors"
+#| fig-cap: "Relationship of male proportion of expedition and success is a small positive relationship possibly explained by other factors"
 
 ggplot(expeditions, aes(x = sex_ratio, y = as.numeric(success))) +
   # Add jittered points with slight transparency
@@ -685,7 +685,7 @@ modelsummary(model2, statistic = c("p.value"))
 
 @tbl-summary2 shows the results when stepwise AIC is preformed.
 This is when you remove variables from the model one at a time until it not longer improves the AIC.
-We see the RMSE doesnt change, meaning it retains the same accuracy as the full model and the AIC is decreased.
+We see the RMSE doesn't change, meaning it retains the same accuracy as the full model and the AIC is decreased.
 
 ```{r, fig.width = 2, fig.height = 1}
 #| echo: false
