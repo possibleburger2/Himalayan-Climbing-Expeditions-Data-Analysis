@@ -68,7 +68,7 @@ Lastly, @sec-discussion talks about some interesting trends found in @sec-result
 
 # Data {#sec-data}
 
-The datasets were cleaned and analysed using the statistical programming software `R` [@citeR] along with the help of `tidyverse` [@citeTidyverse], `knitr` [@citeKnitr], `ggplot2` [@citeGgplot], `here` [@citeHere], `dplyr` [@citeDplyr], `rstanarm` [@citeRstanarm], `arrow` [@citeArrow] and `kableExtra` [@citeKableExtra].
+The datasets were cleaned and analysed using the statistical programming software `R` [@citeR] along with the help of `tidyverse` [@citeTidyverse], `knitr` [@citeKnitr], `ggplot2` [@citeGgplot], `here` [@citeHere], `dplyr` [@citeDplyr], `rstanarm` [@citeRstanarm],`stringr` [@stringr], `brms` [@brms], `rsample` [@rsample], `stats` [@stats], `MASS` [@MASS], and `pROC` [@pROC], `arrow` [@citeArrow] ndefinedand `kableExtra` [@citeKableExtra].
 
 ## Overview
 
