@@ -1,12 +1,12 @@
 ---
-title: "Mountaineering: Be lucky first, prepared second"
-subtitle: "Preperation and Timing are more important than Gender Identity, Age, Amount of expedition members, and height of peak when mountaineering in the Himalayas."
+title: "Conquering the Heights: Key Predictors of Success in Himalayan Mountaineering Expeditions"
+subtitle: "Age, Team Size, Oxygen Use, and Prior Attempts Shape the Odds, While Higher Altitudes Diminish Success Rates"
 author: 
   - Daniel Xu
 thanks: "Code and data are available at: [https://github.com/possibleburger2/](https://github.com/possibleburger2/Himalayan-Climbing-Expeditions-Data-Analysis)."
 date: today
 date-format: long
-abstract: "This study analyzes over a century of Himalayan mountaineering expeditions (1905–2019) to identify key factors influencing success. Using logistic regression, we find that preparation and timing—such as the use of supplemental oxygen and climbing during optimal seasons—are more important predictors of success than individual traits like age, gender, or the height of the peak. These findings reveal that success in high-altitude climbing depends more on strategic choices than personal attributes. This insight underscores the value of informed planning and environmental awareness for achieving mountaineering goals."
+abstract: "This study examines the factors influencing the success of mountain climbing attempts by an expedition using a logistic regression model. More previous attempts, larger team size, and the use of supplemental oxygen were associated with higher success rates, while increased altitude and age reduced the likelihood of success. These findings improve our understanding of how personal, environmental, and logistical elements contribute to outcomes in high-altitude climbing. This knowledge can guide safer and more effective planning for future expeditions."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -16,7 +16,7 @@ editor:
 ---
 
 ```{r}
-#| include: falsex
+#| include: false
 #| warning: false
 #| message: false
 library(tidyverse)
@@ -30,7 +30,12 @@ library(ggplot2)
 library(arkhe)
 library(modelsummary)
 library(kableExtra)
-
+library(stringr)
+library(brms)
+library(rsample)
+library(stats)
+library(MASS)
+library(pROC)
 # Load data
 peaks <- read_parquet(here("data/02-analysis_data/peaks_analysis_data.parquet"))
 expeditions <- read_parquet(here("data/02-analysis_data/expeditions_analysis_data.parquet"))
@@ -77,85 +82,156 @@ Also included are expeditions to both sides of border peaks such as Everest, Cho
 Data on expeditions to trekking peaks are included for early attempts, first ascents and major accidents.
 The updates to this database are published bi-annually.
 
-My dataset, derived from Cookson's, contains the entries from 1905 through Spring 2019.
+My dataset, derived from @Cookson, contains the entries from 1905 through Spring 2019.
+There was not any widely available data for similar climbing data as extensive and detailed.
 
-A person becomes an entry in my analysis dataset if, between 1905 and Spring 2019, they attempted to climb any one of the many Himalayan peaks in Nepal.
+An expedition becomes an entry in my analysis data-set if, between 1905 and Spring 2019, there was an attempt to climb any one of the many Himalayan peaks in Nepal.
+This includes expeditions that were abandoned before the day of the climb due to poor planning or other issues.
 
-The Peaks data includes several variables.
-The "peak_id" is a unique identifier for each peak.
-"peak_name" refers to the common name of the peak, such as "Mount Everest." "peak_alternative_name" is the alternative name of the peak, like "Sagarmatha" for Mount Everest in Nepal.
-"height_metres" is the height of the peak in metres, and "climbing_status" indicates whether the peak has been climbed or not.
-The "first_ascent_year" is the year when the peak was first successfully climbed, and "first_ascent_country" shows the country (or countries) of the climbers who made the first ascent.
-The "first_ascent_expedition_id" is a unique identifier for the expedition that achieved the first ascent.
+The original data is split into 3 data sets: Peaks, Expeditions, and Members.
+Peaks is linked to the other two data sets by `peak_id` which is a unique code for each mountain peak.
+Peaks also contains more information about each specific mountain peak like `height_metres`, and first ascent year, country, and expedition id. `height_metres` is the height of the peak.
 
-The Expeditions data contains variables such as "expedition_id," which is a unique identifier for each expedition.
-"peak_id" links to the unique identifier for the peak being climbed, and "peak_name" refers to the common name of the peak.
-"year" is the year the expedition took place, and "season" indicates the season when the expedition occurred (such as Spring or Summer).
-The "basecamp_date" is the date the expedition arrived at basecamp, and "highpoint_date" is the date the expedition reached the highest point or summit of the peak.
-"termination_date" shows when the expedition ended, and "termination_reason" describes why the expedition was called off.
-"highpoint_metres" is the highest elevation reached by the expedition, while "members" refers to the number of people in the expedition, typically the number of foreigners in Nepal or non-hired members in China.
-"member_deaths" is the number of members who died, and "hired_staff" is the number of hired staff who went above basecamp.
-"hired_staff_deaths" shows the number of hired staff who died, and "oxygen_used" indicates whether any member of the expedition used oxygen.
-"trekking_agency" is the name of the agency organizing the expedition.
+Members contains `member_id` which is a unique id for each individual in each expedition.
+Importantly it doesn't capture the same individual in different expeditions instead assigning two `member_ids`.
+It connects to Expeditions with `expeditions_id` and contains alot of information about the specific member during the expedition.
+Most importantly for this data we use average sex and age of all the members in each expeditions for the model.
 
-The Members data includes variables such as "expedition_id," which is a unique identifier for the expedition, linking to the Expeditions data.
-"member_id" is a unique identifier for each person, though it may differ across expeditions.
-"peak_id" links to the unique identifier for the peak being climbed, and "peak_name" is the common name of the peak.
-"year" is the year of the expedition, and "season" refers to the season of the expedition.
-"sex" is the sex of the person, and "age" is the person's age during the expedition based on available data (such as summit date, date of death, or basecamp arrival).
-"citizenship" is the person's nationality, and "expedition_role" is their role in the expedition.
-"hired" indicates whether the person was hired by the expedition, and "highpoint_metres" is the highest point reached by the person.
-"success" shows whether the person succeeded in summiting the main peak or a sub-peak, depending on the expedition's goal.
-"solo" indicates whether the person attempted a solo ascent, and "oxygen_used" shows whether the person used oxygen.
-"died" indicates whether the person died during the expedition, while "death_cause" shows the primary cause of death.
-"death_height_metres" is the height at which the person died, and "injured" indicates whether the person was injured.
-"injury_type" refers to the main cause of injury, and "injury_height_metres" is the height at which the injury occurred.
+Expeditions contains most of the important data for our model since the model determines the success rate of an expedition as opposed to an individual.
+The `year` column captures the numeric year of the expedition, and `season` indicates the season in which it occurred, such as "Autumn" or "Spring." The `termination_reason` column describes the outcome or reason for the expedition's conclusion, such as "Success (main peak)" or "Accident (death or serious injury)." Details about expedition composition are captured in `members`, which indicates the total number of members, and `hired_staff`, representing the count of additional staff hired.
+The `oxygen_used` column is a logical variable indicating whether supplemental oxygen was used, while `sex_ratio` and `average_age` provide insights into the gender composition and average age of expedition members, respectively.
+Additional success metrics include `success`, a logical column indicating whether the expedition achieved its goal, and `age_range`, a factor summarizing the age distribution of members.
+Finally, the data set includes `height_attempted`, a numeric column for the altitude reached during the expedition, and `previous_attempts`, representing the number of prior attempts made to climb the same peak.
 
-Members of expedition
+\newpage
+
+## Success
 
 ```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-Success
+#| fig-width: 10
+#| fig-height: 5
+#| fig-cap: "A slight majority of Expeditions succeed, with the most common reasons expeditions fail being enviromental issues"
 
+termination_counts <- expeditions |>
+  dplyr::count(termination_reason, sort = TRUE)
+ggplot(termination_counts, aes(x = "", y = n, fill = termination_reason)) +
+  geom_bar(stat = "identity", width = 1) +  # Create the bar chart
+  coord_polar(theta = "y") +               # Transform to a pie chart
+  labs(
+    title = "Distribution of Termination Reasons",
+    fill = "Termination Reason"
+  ) +
+  theme_void() +                           # Clean up unnecessary gridlines
+  theme(legend.position = "right",
+        
+        legend.text = element_text(size = 7),  # Adjust legend text size
+    legend.title = element_text(size = 10), # Adjust legend title size
+  
+    plot.margin = margin(t = 10, r = 1, b = 10, l = 3) # Adjust margins (top, right, bottom, left)
+  )         # Position the legend
+```
+
+@fig-Success shows the distribution of termination reasons, which is the reason given for why the expedition failed.
+
+"Success (main peak)", "Success (subpeak)", and "Success (claimed)" all count as successes for our modelling purpose.
+Sub peak successes are expeditions to a peak lower on the mountain but assuming the expedition planned to reach only the sub peak it should count as a success.
+There is an issue of a sub peak success not properly representing the attempted height of the peak but the relative infrequency of sub peak successes make it not a large problem.
+
+Did not attempt climbs could have been removed from the data, however this is a valid issue the model should help predict so it was left it.
+The main issue is that there could have been many not attempted climbs left out of the data but we are not focusing on that outcome.
+
+\newpage
+
+## Expedition members
+
+Members is the amount of non-paid people in the expedition.
+
+```{r}
 #| warning: false
 #| message: false
 #| echo: false
 #| label: fig-members
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+#| fig-cap: "Most expeditions have less than 3 members showing an exponetial decrease with an increase in members. The red lines indicate member amounts that have only had one expedition"
 
 
 expeditions |>
   ggplot(aes(members)) +
   geom_histogram(
-    binwidth = 2,
-    alpha = 0.8
+    binwidth = 3,
+    alpha = 0.8,
+    boundary = 0,
+    fill = "steelblue",
+    color = "black"
   ) +
+  geom_vline(
+    data = expeditions |> filter(members > 36), 
+    aes(xintercept = members),
+    linetype = "dashed",
+    color = "red"
+  )+
   labs(
-    title = "Distribution of Expedition members",
+    title = "Distribution of Expedition size",
     caption = "Source: The Himalayan Database",
-    x = "Height (m) above sea level",
-    y = "Number of peaks"
-  )
+    x = "Members",
+    y = "Expeditions"
+  ) 
 ```
+
+@fig-members shows most expeditions are parties of less than 3.
+All expeditions with missing data or with zero members were left out so the less than 3 bucket is not over represented.
+This distribution makes sense since larger parties require larger and larger amounts of effort and coordination.
+\newpage
 
 ```{r}
 #| warning: false
 #| message: false
 #| echo: false
-#| label: fig-members
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+#| label: fig-expedition-success
+#| fig-cap: "Party size vs Ex"
 
-success_rate <- expeditions |>
-  group_by(members)|>
-  summarize(success_rate = mean(success))
-ggplot(success_rate, aes(x = members, y = success_rate)) +
-  geom_line(color = "blue") + # Line plot
-  geom_point(color = "red") + # Points to emphasize values
+
+ggplot(expeditions,aes(members,as.numeric(success))) +
+ # Add jittered points with slight transparency 
+  geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
+  # Add logistic regression curve with confidence interval
+  geom_smooth(method = "gam", 
+
+             color = "#e74c3c") +
+  # Add boxplot to show height distribution for success/failure
+  geom_boxplot(aes(group = success), 
+              alpha = 0.2, 
+              color = "#3498db",
+              width = 0.2) +
+  # Customize scales
+  scale_y_continuous(limits = c(0, 1), 
+                    breaks = c(0, 1),
+                    labels = c("Failure", "Success")) +
+  # Customize theme and labels
+  theme_minimal() +
   labs(
-    title = "Success Rate by Members",
-    x = "Number of Members",
-    y = "Success Rate"
+    title = "Expedition members vs Expedition Success",
+    x = "Members",
+    y = "Outcome"
   ) +
-  theme_minimal()
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+
 ```
+
+@fig-expedition-success shows a positive relationship between amount of members and expedition successes.
+The trend line also shows the confidence interval given by the grey area.
+As there are less data points with the increased members the less reliable the trend line is for this relationship.
+While there could be a negative relationship past 25 members, for most expeditions it shows that the more members the greater the chances of successes.
+\newpage
+
+## Hired staff
 
 ```{r}
 #| warning: false
@@ -166,15 +242,31 @@ ggplot(success_rate, aes(x = members, y = success_rate)) +
 
 ggplot(expeditions, aes(hired_staff))+
   geom_histogram(
-    binwidth = 1
-  )
+    binwidth = 1,
+    fill = "steelblue",
+    color = "black"
+  ) +
+  geom_vline(
+    data = expeditions |> filter(hired_staff > 36), 
+    aes(xintercept = hired_staff),
+    linetype = "dashed",
+    color = "red"
+  )+
+  labs(
+    title = "Distribution of Hired Staff",
+    caption = "Source: The Himalayan Database",
+    x = "Staff",
+    y = "Expeditions"
+  ) 
 ```
+
+\newpage
 
 ```{r}
 #| warning: false
 #| message: false
 #| echo: false
-#| label: fig-hired
+#| label: fig-hired-success
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
 success_rate <- expeditions |>
   group_by(hired_staff)|>
@@ -190,6 +282,10 @@ ggplot(success_rate, aes(x = hired_staff, y = success_rate)) +
   theme_minimal()
 ```
 
+\newpage
+
+## Season
+
 ```{r}
 #| warning: false
 #| message: false
@@ -201,7 +297,24 @@ ggplot(expeditions,aes(season)) +
   geom_bar()
 ```
 
-average age
+\newpage
+
+## Year
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-year
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+
+ggplot(expeditions,aes(year)) +
+  geom_histogram()
+```
+
+\newpage
+
+## Average age of expedition
 
 ```{r}
 #| warning: false
@@ -214,25 +327,185 @@ ggplot(expeditions, aes(average_age)) +
   geom_histogram()
 ```
 
+\newpage
+
 ```{r}
 #| warning: false
 #| message: false
 #| echo: false
-#| label: fig-ssdistribution
+#| label: fig-age
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
 success_by_age <- expeditions |>
   group_by(age_range) |>
   summarize(success_rate = mean(success, na.rm = TRUE))
 ggplot(success_by_age,aes( x = age_range, y = success_rate))+
   geom_bar(stat = 'identity')
-  
+
+ggplot(expeditions,aes(average_age,as.numeric(success))) +
+ # Add jittered points with slight transparency 
+  geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
+  # Add logistic regression curve with confidence interval
+  geom_smooth(method = "gam", 
+
+             color = "#e74c3c") +
+  # Add boxplot to show height distribution for success/failure
+  geom_boxplot(aes(group = success), 
+              alpha = 0.2, 
+              color = "#3498db",
+              width = 0.2) +
+  # Customize scales
+  scale_y_continuous(limits = c(0, 1), 
+                    breaks = c(0, 1),
+                    labels = c("Failure", "Success")) +
+  # Customize theme and labels
+  theme_minimal() +
+  labs(
+    title = "Relationship between Height and Success",
+    x = "Height",
+    y = "Outcome"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+```
+
+\newpage
+
+## Proportion of women to men
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-sex
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+
+success_rate <- expeditions |>
+  group_by(sex_ratio)|>
+  summarize(success_rate = mean(success))
+
+ggplot(success_rate, aes(x = sex_ratio, y = success_rate)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "loess", se = TRUE) +
+  labs(title = "Success Rate vs Team Gender Composition",
+       x = "Proportion of Men in Team",
+       y = "Success Rate") +
+  theme_minimal()
+
+ggplot(expeditions, aes(x = sex_ratio, y = as.numeric(success))) +
+  # Add jittered points with slight transparency
+  geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
+  # Add logistic regression curve with confidence interval
+  geom_smooth(method = "glm", 
+             method.args = list(family = "binomial"),
+             color = "#e74c3c") +
+  # Add boxplot to show height distribution for success/failure
+  geom_boxplot(aes(group = success), 
+              alpha = 0.2, 
+              color = "#3498db",
+              width = 0.2) +
+  # Customize scales
+  scale_y_continuous(limits = c(0, 1), 
+                    breaks = c(0, 1),
+                    labels = c("Failure", "Success")) +
+  # Customize theme and labels
+  theme_minimal() +
+  labs(
+    title = "Relationship between Height and Success",
+    x = "Height",
+    y = "Outcome"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+```
+
+can be because many of the data points are the same people, data could represent experience on success rather than gender composition
+
+## Height of mountain attempted
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-height
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+
+ggplot(expeditions,aes(height_attempted)) +
+  geom_histogram()
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-height-success
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+
+success_rate <- expeditions |>
+  group_by(height_attempted)|>
+  summarize(success_rate = mean(success))
+ggplot(success_rate, aes(height_attempted,success_rate)) +
+  geom_point(alpha = 0.6, color = "#2c3e50") +
+  # Add trend line with confidence interval
+  geom_smooth(method = "loess", color = "#e74c3c") +
+  scale_y_continuous(limits = c(0, 1)) +
+  scale_x_continuous(limits = c(5500, 9000)) +
+  # Customize theme and labels
+  theme_minimal() +
+  labs(
+    title = "Relationship between Height of mountain and Success Rate",
+    x = "Sex Ratio",
+    y = "Success Rate",
+    caption = "Data source: Your dataset"
+  ) +
+  # Enhance readability
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+####
+
+ggplot(expeditions, aes(x = height_attempted, y = as.numeric(success))) +
+  # Add jittered points with slight transparency
+  geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
+  # Add logistic regression curve with confidence interval
+  geom_smooth(method = "gam", 
+             method.args = list(family = "binomial"),
+             color = "#e74c3c") +
+  # Add boxplot to show height distribution for success/failure
+  geom_boxplot(aes(group = success), 
+              alpha = 0.2, 
+              color = "#3498db",
+              width = 0.2) +
+  # Customize scales
+  scale_y_continuous(limits = c(0, 1), 
+                    breaks = c(0, 1),
+                    labels = c("Failure", "Success")) +
+  # Customize theme and labels
+  theme_minimal() +
+  labs(
+    title = "Relationship between Height and Success",
+    x = "Height",
+    y = "Outcome"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
 ```
 
 ```{r, fig.width = 12, fig.height = 6}
 #| warning: false
 #| message: false
 #| echo: false
-#| label: fig-ssdistribution
+#| label: fig-height-distribution
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
 
 
@@ -267,6 +540,8 @@ Instead this distribution represents the distribution of peaks commonly attempte
 
 \newpage
 
+## Climbing attempts
+
 ```{r}
 #| warning: false
 #| message: false
@@ -284,155 +559,48 @@ peaks |>
   theme(legend.position = "none")
 ```
 
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| fig-cap: "Amount of unclimbed Himalayan peaks"
+
+ggplot(expeditions, aes(previous_attempts)) +
+  geom_histogram(
+  )
+ggplot(expeditions, aes(previous_attempts, as.numeric(success))) +
+           # Add jittered points with slight transparency
+  geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
+  # Add logistic regression curve with confidence interval
+  geom_smooth(method = "loess", 
+
+             color = "#e74c3c") +
+  # Add boxplot to show height distribution for success/failure
+  geom_boxplot(aes(group = success), 
+              alpha = 0.2, 
+              color = "#3498db",
+              width = 0.2) +
+  # Customize scales
+  scale_y_continuous(limits = c(0, 1), 
+                    breaks = c(0, 1),
+                    labels = c("Failure", "Success")) +
+  # Customize theme and labels
+  theme_minimal() +
+  labs(
+    title = "Relationship between Height and Success",
+    x = "Height",
+    y = "Outcome"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+```
+
 This graph shows that despite over 100 years of climbing history, not all attempted peaks have been conquered.
 Why do so many climbs fail however?
 The following graph shows the most common reasons.
-\newpage
-
-```{r,fig.width = 12, fig.height = 9}
-#| warning: false
-#| message: false
-#| echo: false
-#| label: tbl-termination
-#| tbl-cap: "Common reasons why attempts fail"
-
-filtered_expeditions <- expeditions %>%
-  filter(!termination_reason %in% c("Success (main peak)", "Success (subpeak)", "Success (claimed)"))
-ggplot(filtered_expeditions, aes(x = termination_reason)) +
-  geom_bar(fill = "skyblue", color = "black") +
-  theme_minimal() +
-  labs(
-    title = "Count of Expeditions by Termination Reason",
-    x = "Termination Reason",
-    y = "Count"
-  ) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-@tbl-termination shows that most attempts fail due to partially random events like weather, or random events such Avalanches.
-\newpage
-
-```{r, fig.width = 12, fig.height = 3}
-#| warning: false
-#| message: false
-#| echo: false
-#| label: fig-summit
-#| fig-cap: "Distribution of First ascents across years"
-
-peaks |>
-  ggplot(aes(first_ascent_year)) +
-  geom_histogram(
-    binwidth = 5,
-    alpha = 0.8
-  ) +
-  scale_x_continuous(breaks = seq(1910, 2020, 10)) +
-  labs(title = "Climbers are still summitting peaks for the first time",
-       subtitle = "Year of first ascen",
-       x = "Year of first ascent",
-       y = "Number of first ascents")
-        panel.grid.minor = element_blank()
-```
-
-@fig-summit shows that while there was an intial surge then drop off of first ascents, there was again a steady increase in first ascents actually peaking in 2019, and the 2020 data was inconclusive since not all of the year was recorded in the data.
-This shows that first ascents are currently trending upwards
-
-\newpage
-
-```{r,fig.width = 12, fig.height = 5}
-#| warning: false
-#| message: false
-#| echo: false
-#| label: fig-trend
-#| fig-cap: "Distribution of first ascents by country of citizenship"
-
-
-top_20_countries <- peaks |>
-  filter(!is.na(first_ascent_country)) |>
-  separate_rows(first_ascent_country, sep = ",") |>
-  mutate(
-    # Get rid of whitespace after separate_rows
-    first_ascent_country = str_squish(first_ascent_country),
-    # Aggregate W Germany and Germany into "Germany"
-    first_ascent_country = ifelse(
-      first_ascent_country == "W Germany",
-      "Germany",
-      first_ascent_country
-    )
-  ) |>
-  dplyr::count(first_ascent_country, name = "first_ascents", sort = TRUE) |>
-  mutate(first_ascent_country = fct_reorder(first_ascent_country, first_ascents)) |>
-  dplyr::slice_max(order_by = first_ascents,n=20)
-
-top_20_countries |>
-  ggplot(aes(first_ascents, first_ascent_country, fill = first_ascent_country)) +
-  geom_col() +
-  scale_x_continuous(breaks = seq(0, 150, 25)) +
-  labs(
-    title = "Nepal and Japan lead the way in first ascents",
-    subtitle = "First ascents a country's citizen was involved in",
-    caption = "Source: The Himalayan Database",
-    x = "Number of first ascents",
-    y = ""
-  ) 
-```
-
-@fig-trend Expectedly most first ascents are from the country that the Himalayas reside in, followed by Japan, UK, France, Germany, then the USA..
-
-\newpage
-
-```{r}
-#| echo: false
-#| warning: false
-#| message: false
-#| inlcude: false
-#| label: fig-country
-countries_by_decade <- peaks |>
-  dplyr::filter(!is.na(first_ascent_country), first_ascent_year >= 1910) |>
-  tidyr::separate_rows(first_ascent_country, sep = ",") |>
-  dplyr::mutate(
-    first_ascent_country = stringr::str_squish(first_ascent_country),
-    first_ascent_country = ifelse(
-      first_ascent_country == "W Germany",
-      "Germany",
-      first_ascent_country
-    ),
-    first_ascent_decade = first_ascent_year %/% 10 * 10,
-    first_ascent_country = forcats::fct_lump(first_ascent_country, 8)
-  ) |>
-  dplyr::count(first_ascent_country, first_ascent_decade, name = "first_ascents") |>
-  dplyr::group_by(first_ascent_decade) |>
-  dplyr::mutate(pct_of_ascents = first_ascents / sum(first_ascents)) |>
-  dplyr::ungroup() |>
-  dplyr::mutate(
-    first_ascent_country = forcats::fct_reorder(first_ascent_country, -first_ascents, sum),
-    first_ascent_country = forcats::fct_relevel(first_ascent_country, "Other", after = Inf)
-  )
-
-
-countries_by_decade |>
-  ggplot(aes(first_ascent_decade, pct_of_ascents, fill = first_ascent_country)) +
-  geom_col() +
-  scale_x_continuous(breaks = seq(1930, 2010, 20)) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +  # Correct label function
-  facet_wrap(~ first_ascent_country) +
-  labs(
-    title = "Nepal has been consistently involved in first ascents",
-    subtitle = "Percent of first ascents involving a countries' citizens",
-    x = "Decade of first ascent",
-    y = ""
-  ) +
-  theme(
-    legend.position = "none",
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor = element_blank(),
-    strip.text = element_text(colour = "black"),
-    strip.background = element_blank()
-  )
-```
-
-Notably there was only one data point past 1930, where X expedition had an ascent for X mountain in 1905 that was left out to save space from the UK so there should be a single bar only for the UK at 100% at 1905.
-
-\newpage
 
 ## Measurement
 
@@ -450,13 +618,13 @@ Factors such as weather conditions, local incidents, or logistical difficulties 
 Additionally, subjective elements, like the climbers’ or organizers' interpretation of success, influence the data's structure.
 These steps, while thorough, highlight potential biases in how phenomena are represented as measurable data.
 
-## Model {#sec-model}
+# Model {#sec-model}
 
 I used a Binary Logistic Regression uses the age of an individual,the amount of members in their expedition, the amount of oxygen they used, the season of their climb, their sex and the height of mountain to determine the likelihood of an individual of summit-ting the peak or "succeeding".
 A Binary Logistic Regression is a statistical method to predict binary outcomes like the success or failure of a climb based on both categorical and continuous variables.
-The Model uses six independent demographic variables: "age","members","oxygen_used","season","sex", and "height_metres" and the dependent variable is "success" The logistic regression model I will be using is: $$
-\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{age} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} + \beta_4 \times \text{season} + \beta_5 \times \text{sex} + \beta_6 \times \text{heightmetres} 
-$$
+The Model uses six independent demographic variables: "age","members","oxygen_used","season","sex", and "height_metres" and the dependent variable is "success" The logistic regression model I will be using is: $$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} + \beta_4 \times \text{season} +  \beta_5 \times \text{heightattempted} + \beta_6 \times \text{year} + \beta_7 \times \text{previousattempts}  + \beta_8 \times \text{sexratio} + \beta_9 \times \text{hiredstaff}$$
+
+$$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} +  \beta_4 \times \text{heightattempted}  + \beta_5 \times \text{previousattempts}$$
 
 ## Model Justification
 
@@ -468,15 +636,15 @@ $$
 
 
 # Load your models
-model1 <- readRDS(here("models/binary_logit.rds"))
-model2 <- readRDS(here("models/original_model.rds"))
+model1 <- readRDS(here("models/model1.rds"))
+model2 <- readRDS(here("models/model2.rds"))
 
-#modelsummary(model2,statistic = c("p.value")) simply took output and inputted as png, the length of the table is too long and won't wrap
+modelsummary(model1,statistic = c("p.value")) 
 ```
 
 \newpage
 
-![](image1.png) This table shows the influence (top number) and P-Value (bottom number in brackets) of each variable.
+This table shows the influence (top number) and P-Value (bottom number in brackets) of each variable.
 For example each year increase in age reduces the probability they will succeed by around two percent with a P-value of 0.001 which means we are very sure of this relationship.
 A P-value of 0.001 means only 0.1% of the time this relationship can be explained by random chance.
 Because the standard level of uncertainty is less than 5% we should try to remove variables over a 0.05 P-value.
@@ -492,7 +660,7 @@ Because we have so many statistically insignificant variables at a 5% uncertaint
 #| message: false
 #| label: tbl-summary2
 
-modelsummary(model1, statistic = c("p.value"))
+modelsummary(model2, statistic = c("p.value"))
 ```
 
 \newpage
@@ -522,11 +690,11 @@ This anova table just confirms that there is no difference in the modelling abil
 #| echo: false
 #| warning: false
 #| message: false
-#| label: fig-model-coefficients
+#| label: fig-model-coefficients1
 #| fig-cap: Coefficients of the model
 
 # Coefficients for the model
-coefficients <- broom::tidy(model1, conf.int = TRUE)
+coefficients <- broom::tidy(model2, conf.int = TRUE)
 
 # Plot for the coefficients of the model
 ggplot(coefficients, aes(x = estimate, y = term)) +
@@ -537,32 +705,89 @@ ggplot(coefficients, aes(x = estimate, y = term)) +
   theme_minimal() # Minimal theme for better readability
 ```
 
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+#| label: fig-model-coefficients
+#| fig-cap: Coefficients of the model
+
+
+  
+  data_split <- initial_split(expeditions, prop = 0.8)
+  
+  # Extract the training and testing data
+  train_data <- training(data_split)
+  test_data <- testing(data_split)
+
+ test_data$predicted_prob <- predict(model2,newdata = test_data, type = "response")
+  test_data$predicted_class <- ifelse(test_data$predicted_prob >= 0.5, 1, 0)
+  
+  # Evaluate model performance
+  # Confusion matrix
+  confusion_matrix <- table(Predicted = test_data$predicted_class, Actual = test_data$success)
+  print(confusion_matrix)
+  
+  # Calculate accuracy
+  accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+  print(paste("Accuracy:", accuracy))
+  
+  roc_curve <- roc(test_data$success, test_data$predicted_prob)
+  
+  # Plot the ROC curve
+  plot(roc_curve, col = "blue", main = "ROC Curve", print.auc = TRUE)
+  
+  # Optionally, get the AUC value
+  auc_value <- auc(roc_curve)
+  print(paste("AUC:", auc_value))
+```
+
 @fig-model-coefficients shows most of the coefficients do not have a large affect on success however have a very certain affect on success.
 The season you go are all relative to fall, so going during the fall has a large measured impact on success as well as oxygen used and sex.
 
 # Discussion {#sec-discussion}
 
-## Climbing success relys on oxygen used significantly
+Age is representative of both physical health/training and experience, so it is somewhat inaccurate to assume it would have a linear affect on success.
+It would be better to have specific data on experience and health.
 
-There is a large certain positive affect of oxygen used on a climb, this can be due to many reasons.
-While it is definitely true that oxygen will help with a large obstacle called altitude sickness it also represents a change in technology and climbing culture.
-As technology has gotten better it has been easier and cheaper to carry more oxygen, also due to an ever increasing use of sherpas or hired help to reach summits.
-These are all issues that also increase summit success rates so the data may be over representing the actual effectiveness of oxygen.
-What it also represents is the overall preparedness of the climber, and that will naturally influence the success rate.
+Expedition member numbers can reflect prepardness, benefit of teamwork and coordination.
+It also reflects the inherent increased level of organization of a larger group existing.
+It also can reflect underlying skill of members involved though this could swing either way.
 
-## Spring and Autumn are the best time for expeditions
+Oxygen usage reflects prepardness, technological advancement, climbing community collective experience/coordination
 
-Autumn and spring, as transitional seasons, provide favorable conditions for mountaineering expeditions.
-The periods offer moderate temperatures and more stable weather patterns compared to the extremes of summer and winter.
-@fig-model-coefficients show the difference in probabilities of success by seasons and highlight higher chances of success in spring and autumn.
-@Season provides tips for summit success when climbing Mt. Everest and suggest that the best time to climb it is in the Autumn/ Fall season.
-This is in-line with our findings.
+While season data was deemed unimportant for the model, if you look at the season distribution of climbing it is obvious that climbers prefer spring and fall.
+This is due to the more predictable calmer weather.
 
-Conversely, summer and winter present significant challenges for mountaineers.
-Summer brings the risks of intense heat and thunderstorms, increasing the likelihood of rockfall and other hazards while winter conditions are characterized by extreme cold, high winds, heavy snowfall, and increased avalanche danger, making ascent and descent more difficult and hazardous.
-As a result, winter is generally considered the least desirable season for mountaineering expeditions.
+Sex ratio
 
-In conclusion, autumn and spring are the optimal seasons for mountaineering expeditions, and season selection is an important factor in expedition planning.
+Previous attempt data
+
+This data and the following data analysis mostly covers the human part of the risk in mountaineering.
+That is to say it does not take into account the many environmental factors that exist that cause expeditions to fail.
+
+What can be done about this: Firstly weather forecasting data should be considered for success rate since it constitutes a quarter of all expedition failures.
+
+Other factors like avalanche risk can be measured by snow depth, recent weather patterns, combined with weather forcast data.
+This should prove to be more difficult to predict than overall weather affects since it is very dependent on the specific geography of the peak.
+
+This is similarly rock and ice risk can be measured by weather/erosion patterns, analysis of geography.
+This would be very difficult to realistically observe.
+
+We should also look to observe individual health issues/risks as well as individual skill/ climbing history to more accurately predict success.
+
+While peak height is a valuable way to determine peak difficulty there are a variety of other factors about the geography of a climb that can make it easier or more diffucult.
+
+In general mountaineering carries some sort of risk and that is part of the appeal.
+As technology and experience decreases risk people will attempt riskier routes and peaks.
+
+## What was done
+
+## What was learned
+
+## Missing data
+
+## Going forward
 
 ## Chances of success decline with increase in age
 
@@ -580,32 +805,6 @@ These factors enable them to adapt to the challenges they face, showing that age
 
 In summary, age-related impacts on mountaineering success are significant, with success rates generally decreasing as climbers age.
 However, older climbers can overcome some of these challenges through experience, skill, strength training, and a strong mindset, allowing them to continue enjoying mountaineering well into their later years.
-
-## Weaknesses and Limitations
-
-While my analysis offers valuable insights into the factors influencing a successful summit, it is important to acknowledge the weaknesses and limitations.
-
-In summary, while age can impact mountaineering success, older climbers can still achieve summit success through a combination of experience, skill, and mental strength.
-
-The analysis conducted has some limitations that need to be addressed.
-One of the main weaknesses is that the success probabilities may be skewed due to inaccuracies in the data.
-For example, the number of solo ascents in the dataset is much smaller than the number of group ascents, yet the model suggests that solo ascents have higher success rates.
-This could lead to a misconception that solo climbs are more successful, without considering other contributing factors such as the determination and willpower of those opting for solo expeditions.
-These climbers might be more motivated, which could be a confounding factor influencing their success rates.
-The dataset also has some inconsistencies, especially in variables like nationality and group size.
-Inconsistent reporting methods between different countries, such as the way group size is recorded in Nepal versus China, led to these factors being removed from the analysis.
-This inconsistency limits the ability to draw conclusions based on these variables.
-
-Additionally some variables were not readily available in the data set that would have a large influence on the findings.
-Factors like individual skill, mental direction, and external factors like difficulty of the climb are not included or well represented in the data.
-## Future Directions Looking ahead, future research should focus on improving the dataset by exploring additional factors that could influence summit success.
-One such factor is the number of attempts made by a climber.
-Understanding whether repeated attempts increase the likelihood of success or if there is a point of diminishing returns could provide valuable insights into the role of perseverance and learning from past experiences.
-Additionally, examining the level of technical skill or experience of climbers could help determine if those with more specialized training or knowledge are more likely to succeed.
-A deeper understanding of the climbers' preparedness—both physically and mentally—would also be crucial.
-This could include factors like training regimes, mental resilience, and coping strategies, all of which may play a critical role in a climber's ability to reach the summit.
-Lastly, studying the support systems available to climbers, such as the role of guides, sherpas, or expedition teams, could reveal how these resources impact success rates.
-By considering these factors, future research can provide a more comprehensive understanding of what contributes to successful mountaineering expeditions.
 
 \newpage
 

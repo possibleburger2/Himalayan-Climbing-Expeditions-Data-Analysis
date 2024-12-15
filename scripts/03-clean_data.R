@@ -5,7 +5,7 @@ library(janitor)
 library(lubridate)
 library(arrow)
 
-#from https://github.com/tacookson/data/blob/master/himalayan-expeditions/src/clean-himalayan-data.R
+
 
 # Peaks
 peaks <- read_csv("./data/01-raw_data/peaks.csv") %>%
@@ -29,9 +29,7 @@ peaks <- read_csv("./data/01-raw_data/peaks.csv") %>%
   # Fix data entry error for first_ascent_year for Sharpu II (SPH2)
   mutate(first_ascent_year = ifelse(peak_id == "SPH2", 2018, first_ascent_year))
 
-# Create small dataframe of peak names to join to other dataframes
-peak_names <- peaks %>%
-  select(peak_id, peak_name)
+
 
 # Expeditions
 expeditions <- read_csv("./data/01-raw_data//exped.csv") %>%
@@ -42,18 +40,10 @@ expeditions <- read_csv("./data/01-raw_data//exped.csv") %>%
     peak_name,
     year = YEAR,
     season = SEASON,
-    basecamp_date = BCDATE,
-    highpoint_date = SMTDATE,
-    termination_date = TERMDATE,
     termination_reason = TERMREASON,
-    # Highpoint of 0 is most likely missing value
-    highpoint_metres = ifelse(HIGHPOINT == 0, NA, HIGHPOINT),
     members = TOTMEMBERS,
-    member_deaths = MDEATHS,
     hired_staff = TOTHIRED,
-    hired_staff_deaths = HDEATHS,
     oxygen_used = O2USED,
-    trekking_agency = is.na(AGENCY)
   ) %>%
   mutate(
     termination_reason = case_when(
@@ -157,7 +147,14 @@ members <-
     injury_height_metres = ifelse(injured, injury_height_metres, NA)
 )
 
-print(expeditions)
+sex_ratios <- members |>
+  group_by(expedition_id) |>
+  summarize(sex_ratio = mean(sex == 'M', na.rm = TRUE)) |>  # Will give proportion of males
+  ungroup()
+expeditions <- expeditions |>
+  left_join(sex_ratios, by = "expedition_id")
+
+
 expeditions <- expeditions |>
   # Join with average age data from members
   left_join(
@@ -168,6 +165,7 @@ expeditions <- expeditions |>
     by = "expedition_id"
   ) |>
   # Create success column
+
   mutate(success = termination_reason %in% 
            c("Success (main peak)", "Success (subpeak)", "Success (claimed)")) |>
   # Create age ranges and calculate success rate
@@ -191,6 +189,20 @@ expeditions <- expeditions |>
     )
   ) 
 
+height_attempted <- peaks |>
+  group_by(peak_id) |>
+  summarize(height_attempted = height_metres) |>  
+  ungroup()
+expeditions <- expeditions |>
+  left_join(height_attempted, by = "peak_id")
+
+expeditions <- expeditions |> 
+  arrange(peak_id,year,season) |>
+  group_by(peak_id) |>
+  mutate(
+    previous_attempts = row_number() - 1
+  )|> 
+  ungroup()
 
 write_parquet(expeditions,"data/02-analysis_data/expeditions_analysis_data.parquet")
 write_parquet(members,"data/02-analysis_data/members_analysis_data.parquet")
