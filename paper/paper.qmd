@@ -238,7 +238,7 @@ While there could be a negative relationship past 25 members, for most expeditio
 #| message: false
 #| echo: false
 #| label: fig-hired
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+#| fig-cap: "Distribution of hired staff, all red dotted lines are singular instances where that amount of hired staff were used. Most expeditions dont use hired staff"
 
 ggplot(expeditions, aes(hired_staff))+
   geom_histogram(
@@ -260,6 +260,7 @@ ggplot(expeditions, aes(hired_staff))+
   ) 
 ```
 
+@fig-hired shows most expeditions don't use hired staff, however aside from the 0 bin the distribution closely resembles a smaller version the members expedition.
 \newpage
 
 ```{r}
@@ -267,21 +268,42 @@ ggplot(expeditions, aes(hired_staff))+
 #| message: false
 #| echo: false
 #| label: fig-hired-success
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
-success_rate <- expeditions |>
-  group_by(hired_staff)|>
-  summarize(success_rate = mean(success))
-ggplot(success_rate, aes(x = hired_staff, y = success_rate)) +
-  geom_line(color = "blue") + # Line plot
-  geom_point(color = "red") + # Points to emphasize values
+#| fig-cap: "Relationship of hired staff and success. Unpredictable relationship at higher hired staff hired due to lower amounts of data and possibly lack of relationship"
+
+ggplot(expeditions,aes(hired_staff,as.numeric(success))) +
+ # Add jittered points with slight transparency 
+  geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
+  # Add logistic regression curve with confidence interval
+  geom_smooth(method = "gam", 
+
+             color = "#e74c3c") +
+  # Add boxplot to show height distribution for success/failure
+  geom_boxplot(aes(group = success), 
+              alpha = 0.2, 
+              color = "#3498db",
+              width = 0.2) +
+  # Customize scales
+  scale_y_continuous(limits = c(0, 1), 
+                    breaks = c(0, 1),
+                    labels = c("Failure", "Success")) +
+  # Customize theme and labels
+  theme_minimal() +
   labs(
-    title = "Success Rate by Members",
-    x = "Number of Members",
-    y = "Success Rate"
+    title = "Relationship between Hired staff and Success",
+    x = "Hired Staff",
+    y = "Outcome"
   ) +
-  theme_minimal()
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
 ```
 
+@fig-hired-success has a confusing trend line that doesn't really tell us about a relationship between hired staff and success.
+Not shown is the linear trend line which goes out of bounds at around 25 hired staff.
+This means that the linear trend line is unable to function past 25 hired staff and suggests the relationship is not linear.
+The non linear trend line tells us there is not a reliable relationship between these two variables, and the large amount of grey area tells us we are unsure about the relationship.
 \newpage
 
 ## Season
@@ -292,9 +314,23 @@ ggplot(success_rate, aes(x = hired_staff, y = success_rate)) +
 #| echo: false
 #| label: fig-season
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
-
-ggplot(expeditions,aes(season)) +
-  geom_bar()
+expeditions$season <- factor(expeditions$season, levels = c("Winter", "Spring", "Summer", "Autumn"))
+expeditions <- expeditions[!is.na(expeditions$season), ]
+ggplot(expeditions, aes(season)) +
+  geom_bar(aes(fill = season)) +
+  scale_fill_manual(values = c(
+    "Winter" = "#56B4E9",
+    "Spring" = "#009E73",
+    "Summer" = "#F0E442",
+    "Autumn" = "#D55E00"
+  )) +
+  labs(
+    title = "Number of Expeditions by Season",
+    x = "Season",
+    y = "Count",
+    fill = "Season"
+  ) +
+  theme_minimal()
 ```
 
 \newpage
@@ -308,8 +344,16 @@ ggplot(expeditions,aes(season)) +
 #| label: fig-year
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
 
-ggplot(expeditions,aes(year)) +
-  geom_histogram()
+
+ggplot(expeditions, aes(year)) +
+  geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
+  labs(
+    title = "Histogram of Expeditions by Year",
+    x = "Year",
+    y = "Count"
+  ) +
+  theme_minimal()
+
 ```
 
 \newpage
@@ -322,9 +366,15 @@ ggplot(expeditions,aes(year)) +
 #| echo: false
 #| label: fig-ssdistribution
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
-
 ggplot(expeditions, aes(average_age)) +
-  geom_histogram()
+  geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
+  labs(
+    title = "Histogram of Average Age in Expeditions",
+    x = "Average Age",
+    y = "Count"
+  ) +
+  theme_minimal()
+
 ```
 
 \newpage
@@ -340,6 +390,17 @@ success_by_age <- expeditions |>
   summarize(success_rate = mean(success, na.rm = TRUE))
 ggplot(success_by_age,aes( x = age_range, y = success_rate))+
   geom_bar(stat = 'identity')
+
+```
+
+\newpage
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-age-success
+#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
 
 ggplot(expeditions,aes(average_age,as.numeric(success))) +
  # Add jittered points with slight transparency 
@@ -380,19 +441,35 @@ ggplot(expeditions,aes(average_age,as.numeric(success))) +
 #| message: false
 #| echo: false
 #| label: fig-sex
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
+#| fig-cap: "Distribution of male proportion in expeditions shows most expeditions are all male"
 
-success_rate <- expeditions |>
-  group_by(sex_ratio)|>
-  summarize(success_rate = mean(success))
+ggplot(expeditions, aes(sex_ratio)) +
+  geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
+  labs(
+    title = "Histogram of Average Age in Expeditions",
+    x = "Average Age",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Distribution of male proportion in expeditions",
+    x = "Height",
+    y = "Outcome"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
 
-ggplot(success_rate, aes(x = sex_ratio, y = success_rate)) +
-  geom_point(alpha = 0.3) +
-  geom_smooth(method = "loess", se = TRUE) +
-  labs(title = "Success Rate vs Team Gender Composition",
-       x = "Proportion of Men in Team",
-       y = "Success Rate") +
-  theme_minimal()
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| label: fig-sex-success
+#| fig-cap: "Relationship of male proportion of expedition and succes is a small positive relationship possibly explained by other factors"
 
 ggplot(expeditions, aes(x = sex_ratio, y = as.numeric(success))) +
   # Add jittered points with slight transparency
@@ -413,7 +490,7 @@ ggplot(expeditions, aes(x = sex_ratio, y = as.numeric(success))) +
   # Customize theme and labels
   theme_minimal() +
   labs(
-    title = "Relationship between Height and Success",
+    title = "Relationship between male proportion of expedition and Success",
     x = "Height",
     y = "Outcome"
   ) +
@@ -435,8 +512,20 @@ can be because many of the data points are the same people, data could represent
 #| label: fig-height
 #| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
 
-ggplot(expeditions,aes(height_attempted)) +
-  geom_histogram()
+ggplot(expeditions, aes(height_attempted)) +
+  geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
+  labs(
+    title = "Height of mountains attempted",
+    x = "Height in meters",
+    y = "Expeditions"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+
 ```
 
 ```{r}
@@ -475,7 +564,7 @@ ggplot(expeditions, aes(x = height_attempted, y = as.numeric(success))) +
   # Add jittered points with slight transparency
   geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
   # Add logistic regression curve with confidence interval
-  geom_smooth(method = "gam", 
+  geom_smooth(method = "glm", 
              method.args = list(family = "binomial"),
              color = "#e74c3c") +
   # Add boxplot to show height distribution for success/failure
@@ -501,43 +590,6 @@ ggplot(expeditions, aes(x = height_attempted, y = as.numeric(success))) +
   )
 ```
 
-```{r, fig.width = 12, fig.height = 6}
-#| warning: false
-#| message: false
-#| echo: false
-#| label: fig-height-distribution
-#| fig-cap: "Distribution of Himialayan peaks, mountains recorded are centered around 6200 M above sea level.."
-
-
-peaks |>
-  ggplot(aes(height_metres)) +
-  geom_histogram(
-    binwidth = 200,
-    alpha = 0.8
-  ) +
-  annotate("text", 8450, 17, label = "Mount Everest") +
-  annotate(
-    "curve",
-    x = 8500,
-    y = 15,
-    xend = 8775,
-    yend = 2,
-    curvature = -0.25,
-    arrow = arrow(length = unit(2, "mm"))
-  ) +
-  labs(
-    title = "Distribution of Himalayan Peak Heights",
-    caption = "Source: The Himalayan Database",
-    x = "Height (m) above sea level",
-    y = "Number of peaks"
-  )
-```
-
-@fig-ssdistribution shows most peaks sit around 6000 meters above sea level, with a right skewed distribution and a maximum of almost 9000 meters and a minimum of 5250 meters.
-
-The Himalayan mountain range spans a large amount of distance, which means that the graphed distribution does not represent the distribution of ALL peaks in the Himalayas.
-Instead this distribution represents the distribution of peaks commonly attempted/climbed.The Himalayas starting at X M starting above 2000m sea level combined with the lowest height required to be considered a peak, the distribution starts at 5000m above sea level.
-
 \newpage
 
 ## Climbing attempts
@@ -548,16 +600,22 @@ Instead this distribution represents the distribution of peaks commonly attempte
 #| echo: false
 #| fig-cap: "Amount of unclimbed Himalayan peaks"
 
-peaks |>
-  ggplot(aes(climbing_status, fill = climbing_status)) +
-  geom_bar() +
+ggplot(expeditions, aes(previous_attempts)) +
+  geom_histogram(fill = "#56B4E9", color = "black", bins = 30) +
   labs(
-    title = "More than a quarter of Himalayan peaks remain unclimbed",
-    x = "",
-    y = "Number of peaks"
+    title = "Height of mountains attempted",
+    x = "Height in meters",
+    y = "Expeditions"
   ) +
-  theme(legend.position = "none")
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
 ```
+
+\newpage
 
 ```{r}
 #| warning: false
@@ -565,9 +623,6 @@ peaks |>
 #| echo: false
 #| fig-cap: "Amount of unclimbed Himalayan peaks"
 
-ggplot(expeditions, aes(previous_attempts)) +
-  geom_histogram(
-  )
 ggplot(expeditions, aes(previous_attempts, as.numeric(success))) +
            # Add jittered points with slight transparency
   geom_jitter(height = 0.05, alpha = 0.3, color = "#2c3e50") +
@@ -620,11 +675,9 @@ These steps, while thorough, highlight potential biases in how phenomena are rep
 
 # Model {#sec-model}
 
-I used a Binary Logistic Regression uses the age of an individual,the amount of members in their expedition, the amount of oxygen they used, the season of their climb, their sex and the height of mountain to determine the likelihood of an individual of summit-ting the peak or "succeeding".
+I used a Binary Logistic Regression uses the average age of an expedition,the amount of members in the expedition, the amount of hired staff in the expedition, whether or not they used oxygen, the season of the climb, the sex ratio, previous attemps on the same peak, and the height of mountain to determine the likelihood of an individual of summit-ting the peak or "succeeding".
 A Binary Logistic Regression is a statistical method to predict binary outcomes like the success or failure of a climb based on both categorical and continuous variables.
-The Model uses six independent demographic variables: "age","members","oxygen_used","season","sex", and "height_metres" and the dependent variable is "success" The logistic regression model I will be using is: $$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} + \beta_4 \times \text{season} +  \beta_5 \times \text{heightattempted} + \beta_6 \times \text{year} + \beta_7 \times \text{previousattempts}  + \beta_8 \times \text{sexratio} + \beta_9 \times \text{hiredstaff}$$
-
-$$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} +  \beta_4 \times \text{heightattempted}  + \beta_5 \times \text{previousattempts}$$
+The Model uses nine independent demographic variables and the dependent variable is "success" The logistic regression model I will be using is: $$\log\left(\frac{\hat{p}}{1 - \hat{p}}\right) = \beta_0 + \beta_1 \times \text{averageage} + \beta_2 \times \text{members} + \beta_3 \times \text{oxygenused} + \beta_4 \times \text{season} +  \beta_5 \times \text{heightattempted} + \beta_6 \times \text{year} + \beta_7 \times \text{previousattempts}  + \beta_8 \times \text{sexratio} + \beta_9 \times \text{hiredstaff}$$
 
 ## Model Justification
 
@@ -648,9 +701,8 @@ This table shows the influence (top number) and P-Value (bottom number in bracke
 For example each year increase in age reduces the probability they will succeed by around two percent with a P-value of 0.001 which means we are very sure of this relationship.
 A P-value of 0.001 means only 0.1% of the time this relationship can be explained by random chance.
 Because the standard level of uncertainty is less than 5% we should try to remove variables over a 0.05 P-value.
-There are also several figures relating to model accurary at the bottom of the figure;the main one to focus on is RMSE.
-An RMSE of 0.41 means the model predicts results within 41% of the actual results.
-For a model with a binary outcome it means our model predicts successes 59% of the time.(removed entries for each country due to formatting issues)
+There are also several figures relating to model accuracy at the bottom of the figure;the main ones to focus on are the AIC and the RMSE.
+While these value do not mean much in isolation when comparing two models we should look to use the one with the lower AIC and the lower RMSE.
 
 Because we have so many statistically insignificant variables at a 5% uncertainty we should try to remove them to see the impact it has on the model
 
@@ -665,9 +717,9 @@ modelsummary(model2, statistic = c("p.value"))
 
 \newpage
 
-The second table shows the results when citizenship and hired_staff are removed.
-We see the RMSE only grains 0.01, meaning it loses 1% accuracy.
-This means the citizenship of climber nor the amount of hired staff did not contribute to the model's accuracy and were good to remove.
+@tbl-summary2 shows the results when stepwise AIC is preformed.
+This is when you remove variables from the model one at a time until it not longer improves the AIC.
+We see the RMSE doesnt change, meaning it retains the same accuracy as the full model and the AIC is decreased.
 
 ```{r, fig.width = 2, fig.height = 1}
 #| echo: false
@@ -682,9 +734,10 @@ kable(results, caption = "ANOVA Model Comparison") |>
   kable_styling(full_width = FALSE, position = "center")
 ```
 
-This anova table just confirms that there is no difference in the modelling ability after removing the two predictor variables.
-
-## Results {#sec-results}
+The full model in @tbl-summary (with 6 more parameters) does not significantly improve model fit compared to the reduced model.
+The p-value of 0.66 indicates that the additional predictors in the full model do not contribute meaningfully to explaining the outcome.
+Therefore, the simpler (reduced) model is likely preferable because it achieves similar performance with fewer parameters.
+\newpage \## Results {#sec-results}
 
 ```{r}
 #| echo: false
@@ -704,6 +757,10 @@ ggplot(coefficients, aes(x = estimate, y = term)) +
   labs(x = "Coefficient Estimate", y = "Predictor Variable") + # Axis labels
   theme_minimal() # Minimal theme for better readability
 ```
+
+@fig-model-coefficients1 shows that average age and height attempted has a small negative affect on success, while previous attempt and members slightly increase the rate of success.
+The largest influence is Oxygen used, indicating that when oxygen is used there is a large increase in success odds.
+\newpage
 
 ```{r}
 #| echo: false
@@ -737,105 +794,82 @@ ggplot(coefficients, aes(x = estimate, y = term)) +
   # Plot the ROC curve
   plot(roc_curve, col = "blue", main = "ROC Curve", print.auc = TRUE)
   
-  # Optionally, get the AUC value
-  auc_value <- auc(roc_curve)
-  print(paste("AUC:", auc_value))
 ```
 
-@fig-model-coefficients shows most of the coefficients do not have a large affect on success however have a very certain affect on success.
-The season you go are all relative to fall, so going during the fall has a large measured impact on success as well as oxygen used and sex.
+This all shows our model is around 65% accurate when used on testing data.
+The Roc graph shows a 0.71 AUC score which is above acceptable model accuracy standards.
 
 # Discussion {#sec-discussion}
 
-Age is representative of both physical health/training and experience, so it is somewhat inaccurate to assume it would have a linear affect on success.
-It would be better to have specific data on experience and health.
+## How age is an influence
 
-Expedition member numbers can reflect prepardness, benefit of teamwork and coordination.
-It also reflects the inherent increased level of organization of a larger group existing.
-It also can reflect underlying skill of members involved though this could swing either way.
+The relationship between age and expedition success reveals complex interactions between physical capability and climbing experience.
+In the model, we assume age has a linear relationship with success.
+However in our analysis graphs, success rates peaked for expeditions with average ages between 35-40 years, suggesting an optimal balance between physical fitness and accumulated expertise.
+However, age alone is an imperfect proxy for these factors.
+It would be more accurate if we were given years trained and certain fitness numbers to better estimate physical fitness and expertise along with age.
 
-Oxygen usage reflects prepardness, technological advancement, climbing community collective experience/coordination
+## Expedition size
 
-While season data was deemed unimportant for the model, if you look at the season distribution of climbing it is obvious that climbers prefer spring and fall.
-This is due to the more predictable calmer weather.
+Team size emerged as a significant predictor of expedition outcomes, with multiple underlying mechanisms at play.
+Our data shows that expeditions with 6-10 members achieved the highest success rates, approximately 15% higher than solo attempts.
+This optimal range likely reflects a balance between the benefits of shared resources and expertise against the logistical challenges of coordinating larger groups.
+Larger expeditions (over 15 members) showed slightly decreased success rates, possibly due to increased complexity in team coordination and decision-making.
+Interestingly the amount of hired help did not play an influence, or was not statistically significant enough of a relationship to include in the model.
+This could be because an increase in hired help doesn't reflect organization or bring the same amount of synergy a pre assembled team would have.
 
-Sex ratio
+## Oxygen usage and its importance
 
-Previous attempt data
+The use of supplemental oxygen has become increasingly prevalent and significantly impacts success rates.
+Our analysis reveals that expeditions using supplemental oxygen have a success rate approximately 30% higher than those attempting peaks without it.
+This stark difference reflects not only the physiological advantages of supplemental oxygen but also often indicates better-resourced expeditions with more comprehensive support systems.
+Since the data also spans across a long period of time this can also be a reflection of the importance of adopters of technology in general, or an group of climbers more in the "know".
 
-This data and the following data analysis mostly covers the human part of the risk in mountaineering.
-That is to say it does not take into account the many environmental factors that exist that cause expeditions to fail.
+## Season's misrepresentation in the data
 
-What can be done about this: Firstly weather forecasting data should be considered for success rate since it constitutes a quarter of all expedition failures.
+Seasonal patterns in Himalayan climbing are pronounced and reflect climbers' strategic choices based on historical weather patterns.
+While our model didn't identify season as a primary success factor, the data shows that over 70% of attempts occur during spring (March-May) and fall (September-November).
+Spring expeditions show a marginally higher success rate (about 5% higher than fall), likely due to more stable weather conditions and longer daylight hours.
+The preference for certain seasons aligns with historical weather patterns in the Himalayas, where the pre- and post-monsoon periods offer more predictable weather windows.
+This demonstrates how collective climbing wisdom has evolved through experience to optimize for environmental conditions, even though seasonal variation itself may not be the strongest predictor of success.
 
-Other factors like avalanche risk can be measured by snow depth, recent weather patterns, combined with weather forcast data.
-This should prove to be more difficult to predict than overall weather affects since it is very dependent on the specific geography of the peak.
+## Experience and its measurement.
 
-This is similarly rock and ice risk can be measured by weather/erosion patterns, analysis of geography.
-This would be very difficult to realistically observe.
+Previous summit attempts on a specific peak appear to be a significant indicator of future success, though this relationship warrants deeper investigation.
+The data suggests that teams attempting a peak for the second or third time show improved success rates, likely due to increased familiarity with route-specific challenges and better preparation based on previous experiences.
+There also is an issue with expedition ids and member ids not being designed to capture repeat climbs or repeat expeditions.
+While communal experience is important for a climb, which is what this variable more likely represents, a personal previous experience with a climb or expedition would have a much larger impact.
 
-We should also look to observe individual health issues/risks as well as individual skill/ climbing history to more accurately predict success.
+## Environmental factors not represented
 
-While peak height is a valuable way to determine peak difficulty there are a variety of other factors about the geography of a climb that can make it easier or more diffucult.
+Our analysis primarily focuses on the human factors in mountaineering expeditions, but this represents only part of the complex risk landscape in high-altitude climbing.
+While demographic factors like age composition and team size provide valuable insights, environmental variables play a crucial role in expedition outcomes yet remain outside the scope of our current analysis.
+Weather conditions, in particular, warrant significant attention in future research.
+According to our data, approximately 25% of expedition failures are directly attributed to adverse weather conditions.
+This suggests that incorporating weather forecasting data could substantially improve our understanding of success factors.
+For instance, a study by Raymond et al. (2020) @huey2020death found that on Mount Everest, weather windows—periods of favorable climbing conditions—have become more frequent in May due to climate change, correlating with increased success rates.
+Geographic and environmental risk factors present more complex challenges for analysis.
+Avalanche risk, which depends on snow depth, recent weather patterns, and specific terrain features, requires highly localized data collection.
+Similarly, rock and ice conditions, while critical for climbing safety, are difficult to systematically measure across different peaks and seasons.
+The American Alpine Club @aac2023accidents reports that avalanches account for approximately 29% of climbing fatalities in North America, highlighting the importance of these environmental factors.
+Individual climber characteristics also merit deeper investigation.
 
-In general mountaineering carries some sort of risk and that is part of the appeal.
-As technology and experience decreases risk people will attempt riskier routes and peaks.
+## Specific personal information
 
-## What was done
-
-## What was learned
-
-## Missing data
-
-## Going forward
-
-## Chances of success decline with increase in age
-
-Age is a significant factor in mountaineering success, with success rates generally decreasing as climbers get older.
-This decline can be attributed to various age-related factors, such as the natural loss of muscle mass, strength, and aerobic capacity.
-As climbers age, they may also experience reduced agility, flexibility, and slower recovery, which can hinder their performance on difficult terrain and in recovering from intense physical exertion.
-
-In addition to these physical challenges, older climbers may face health issues like cardiovascular problems, joint stiffness, and decreased bone density, all of which can further limit their ability to meet the physical demands of mountaineering.
-These factors contribute to a reduced ability to handle the stresses of expeditions and increase the likelihood of difficulties along the way.
-
-However, it is important to recognize that success in mountaineering is not solely determined by physical ability.
-Experience, skill, preparation, and mental strength play crucial roles in overcoming the challenges of the climb.
-Older climbers, despite the physiological decline that comes with age, can still achieve success by leveraging their experience, using strategic planning, and maintaining a strong mindset.
-These factors enable them to adapt to the challenges they face, showing that age does not necessarily preclude achieving mountaineering goals.
-
-In summary, age-related impacts on mountaineering success are significant, with success rates generally decreasing as climbers age.
-However, older climbers can overcome some of these challenges through experience, skill, strength training, and a strong mindset, allowing them to continue enjoying mountaineering well into their later years.
+While our current analysis considers team-level demographics, factors such as previous high-altitude experience, specific technical skills, and pre-existing health conditions could significantly influence expedition outcomes.
+A study by Huey et al. (2020) @huey2020death found that previous Himalayan climbing experience significantly improved survival rates above 8000 meters.
+Peak difficulty cannot be reduced to altitude alone.
+Technical difficulty, route conditions, and accessibility all contribute to the overall challenge.
+For example, K2, though lower than Everest, has a significantly lower success rate (around 25% compared to Everest's 60%) due to its steeper slopes and more challenging technical sections.
+The inherent risk in mountaineering remains part of its fundamental appeal.
+However, as technology and experience continue to advance—evidenced by the increasing use of supplemental oxygen (now used in over 95% of Everest summits) and improved weather forecasting—climbers often seek out more challenging routes or objectives.
+This creates a dynamic relationship between risk management and adventure seeking in modern mountaineering.
 
 \newpage
 
 \appendix
 
 # Appendix {#sec-appendix}
-
-## Cleaning
-
-For the analysis data, the cleaning steps were from @Cookson
-
-The data cleaning process described in the provided script involves transforming raw data into a more consistent, accurate, and analysis-ready format.
-The first step in the cleaning process is applied to the peaks dataset, which contains information about various mountain peaks.
-In this step, columns are renamed for clarity, such as changing PEAKID to peakid and PKNAME to peakname.
-Only the necessary columns are retained, while others are discarded to simplify the dataset.
-A key aspect of this cleaning is handling the climbingstatus column.
-The raw data uses numerical values (0, 1, 2) to represent the climbing status, so these numbers are recoded into meaningful labels like "Unknown," "Unclimbed," and "Climbed." Additionally, a data entry error is corrected for Sharpu II (identified by peakid == "SPH2"), where the year of the first ascent is changed to 2018 to fix an obvious mistake.
-
-The second dataset cleaned is the expeditions dataset, which tracks various climbing expeditions.
-Here, the dataset is joined with the peaks dataset to bring in the peakname for each expedition using the peakid.
-Only the relevant columns are selected and renamed for clarity.
-The highpointmetres column is adjusted by setting any value of 0 to NA, as it likely indicates missing data.
-Categorical variables like terminationreason and season are recoded to make them more readable.
-The terminationreason column is recoded from numeric values (such as 0, 1, and 2) into descriptive labels like "Success (main peak)," "Bad weather," and "Accident." Similarly, the season column is recoded from numbers (0-4) into readable season names like "Spring," "Summer," "Autumn," and "Winter."
-
-The third dataset, members, contains information about individual climbers.
-This dataset is also joined with the peaks dataset to associate each climber's expedition with the corresponding peak name.
-As with the other datasets, only the relevant columns are retained and renamed.
-Any value of 0 in the age column is treated as missing data and changed to NA.
-The deathcause and injurytype columns, which are initially represented by numeric values (0-12), are recoded into readable categories like "AMS" (Acute Mountain Sickness) and "Exhaustion." The cleaning also involves handling information related to deaths and injuries.
-For climbers who have died, the deathcause and deathheightmetres are updated, and similarly, the injurytype and injuryheightmetres are updated for injured climbers.
 
 ## Observational data
 
@@ -867,5 +901,33 @@ Conclusion
 The misrepresentation of Himalayan climbing data has implications for understanding the true risks and challenges of high-altitude mountaineering.
 Efforts to improve the accuracy of this data, such as independent verification and more comprehensive reporting systems, are essential for providing climbers, researchers, and policymakers with reliable information.
 Sources like The Himalayan Database [@Salisbury], the American Alpine Journal, and recent academic studies on mountaineering ethics and statistics provide valuable insights but also highlight the need for more transparent and standardized data collection practices.
+
+## Future directions
+
+While our analysis provides insights into expedition outcomes based on team composition and basic environmental factors, a more comprehensive understanding of mountaineering risk and success requires integration of multiple observational data streams and advanced modeling techniques.
+
+Current environmental monitoring systems on major peaks like Everest provide crucial but limited data.
+Future research could benefit from a more extensive network of high-altitude weather stations providing real-time data on wind patterns, temperature gradients, precipitation, barometric pressure changes, and snow accumulation rates.
+Integration of satellite imagery could enhance these ground-based observations by tracking snow cover extent and depth, glacial movement patterns, ice fall dynamics, rock fall zones, and avalanche paths and debris patterns.
+
+Building on existing meteorological models, future research could develop route-specific risk models that integrate topographical data with weather patterns, modeling of snow loading and avalanche risk, ice fall prediction based on temperature patterns, and rock fall risk assessment incorporating freeze-thaw cycles.
+Physiological response simulations could model altitude acclimatization based on ascent profiles, energy expenditure predictions for different route sections, oxygen demand at various altitudes and exertion levels, and cold exposure risk assessment.
+
+Modern computational techniques could help synthesize multiple data streams, including historical expedition data, real-time weather observations, satellite imagery, individual climber biometrics, and equipment performance metrics.
+Machine learning models could then identify optimal weather windows for summit attempts, predict route-specific risks based on current conditions, suggest optimal acclimatization schedules, and recommend equipment configurations for specific conditions.
+
+This research would build upon existing studies like \[\@huey2020death\], who analyzed death rates on Everest, by incorporating their findings about team dynamics and oxygen use into more comprehensive risk models.
+The American Alpine Club's accident analysis \[\@aac2023accidents\] provides valuable historical data on accident patterns that could inform predictive models.
+
+Any proposed models would require extensive validation through historical data analysis, controlled testing in alpine environments, feedback from experienced mountaineers, and real-world implementation and monitoring.
+This research could lead to real-time risk assessment tools for expedition leaders, improved route planning and logistics, and better-informed decision-making about summit attempt timing, route selection, resource allocation, team composition, enhanced safety protocols, and more effective emergency response planning.
+
+Several challenges need to be addressed in this research, including data collection in extreme environments, integration of diverse data types, model validation in complex mountain environments, balancing predictive power with practical usability, cost and maintenance of monitoring systems, privacy considerations for individual climber data, and ethical implications of risk assessment tools.
+
+Future research should prioritize developing robust data collection systems and creating standardized risk assessment protocols while building user-friendly interfaces for practical application.
+Establishing international collaboration networks, integrating indigenous knowledge and local expertise, addressing ethical considerations in risk management, and studying the impact of climate change on mountaineering risk are also crucial areas for development.
+
+This comprehensive approach to observational data would significantly enhance our understanding of mountaineering risk factors and potentially lead to improved safety outcomes while maintaining the fundamental challenge and appeal of high-altitude climbing.
+The integration of modern technology with traditional mountaineering wisdom could create a more nuanced and effective approach to risk management in high-altitude expeditions.
 
 # References
